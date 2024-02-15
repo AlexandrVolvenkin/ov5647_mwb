@@ -119,6 +119,7 @@ struct ov5647_mode
     const struct regval_list	*reg_list;
     unsigned int			num_regs;
 };
+
 struct ov5647_ctrls {
 	struct v4l2_ctrl_handler handler;
 	struct v4l2_ctrl *pixel_rate;
@@ -163,6 +164,7 @@ struct ov5647
     struct v4l2_ctrl		*hblank;
     struct v4l2_ctrl		*vblank;
     struct v4l2_ctrl		*exposure;
+    struct v4l2_ctrl		*auto_wb;
     bool				streaming;
 };
 
@@ -1617,6 +1619,346 @@ static const struct v4l2_subdev_internal_ops ov5647_subdev_internal_ops =
     .open = ov5647_open,
 };
 
+
+//static const struct ov5647_v4l2_ctrl v4l2_ctrls[] = {
+//	{
+//		.id = V4L2_CID_SATURATION,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = -100,
+//		.max = 100,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_SATURATION,
+//		.setter = ctrl_set_rational,
+//	},
+//	{
+//		.id = V4L2_CID_SHARPNESS,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = -100,
+//		.max = 100,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_SHARPNESS,
+//		.setter = ctrl_set_rational,
+//	},
+//	{
+//		.id = V4L2_CID_CONTRAST,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = -100,
+//		.max = 100,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_CONTRAST,
+//		.setter = ctrl_set_rational,
+//	},
+//	{
+//		.id = V4L2_CID_BRIGHTNESS,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 100,
+//		.def = 50,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_BRIGHTNESS,
+//		.setter = ctrl_set_rational,
+//	},
+//	{
+//		.id = V4L2_CID_ISO_SENSITIVITY,
+//		.type = MMAL_CONTROL_TYPE_INT_MENU,
+//		.min = 0,
+//		.max = ARRAY_SIZE(iso_qmenu) - 1,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = iso_qmenu,
+//		.mmal_id = MMAL_PARAMETER_ISO,
+//		.setter = ctrl_set_iso,
+//	},
+//	{
+//		.id = V4L2_CID_ISO_SENSITIVITY_AUTO,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = 0,
+//		.max = V4L2_ISO_SENSITIVITY_AUTO,
+//		.def = V4L2_ISO_SENSITIVITY_AUTO,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_ISO,
+//		.setter = ctrl_set_iso,
+//	},
+//	{
+//		.id = V4L2_CID_IMAGE_STABILIZATION,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 1,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_VIDEO_STABILISATION,
+//		.setter = ctrl_set_value,
+//	},
+//	{
+//		.id = V4L2_CID_EXPOSURE_AUTO,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = ~0x03,
+//		.max = V4L2_EXPOSURE_APERTURE_PRIORITY,
+//		.def = V4L2_EXPOSURE_AUTO,
+//		.step = 0,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_EXPOSURE_MODE,
+//		.setter = ctrl_set_exposure,
+//	},
+//	{
+//		.id = V4L2_CID_EXPOSURE_ABSOLUTE,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		/* Units of 100usecs */
+//		.min = 1,
+//		.max = 1 * 1000 * 10,
+//		.def = 100 * 10,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_SHUTTER_SPEED,
+//		.setter = ctrl_set_exposure,
+//	},
+//	{
+//		.id = V4L2_CID_AUTO_EXPOSURE_BIAS,
+//		.type = MMAL_CONTROL_TYPE_INT_MENU,
+//		.min = 0,
+//		.max = ARRAY_SIZE(ev_bias_qmenu) - 1,
+//		.def = (ARRAY_SIZE(ev_bias_qmenu) + 1) / 2 - 1,
+//		.step = 0,
+//		.imenu = ev_bias_qmenu,
+//		.mmal_id = MMAL_PARAMETER_EXPOSURE_COMP,
+//		.setter = ctrl_set_value_ev,
+//	},
+//	{
+//		.id = V4L2_CID_EXPOSURE_AUTO_PRIORITY,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 1,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		/* Dummy MMAL ID as it gets mapped into FPS range */
+//		.mmal_id = 0,
+//		.setter = ctrl_set_exposure,
+//	},
+//	{
+//		.id = V4L2_CID_EXPOSURE_METERING,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = ~0xf,
+//		.max = V4L2_EXPOSURE_METERING_MATRIX,
+//		.def = V4L2_EXPOSURE_METERING_AVERAGE,
+//		.step = 0,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_EXP_METERING_MODE,
+//		.setter = ctrl_set_metering_mode,
+//	},
+//	{
+//		.id = V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = ~0x3ff,
+//		.max = V4L2_WHITE_BALANCE_SHADE,
+//		.def = V4L2_WHITE_BALANCE_AUTO,
+//		.step = 0,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_AWB_MODE,
+//		.setter = ctrl_set_awb_mode,
+//	},
+//	{
+//		.id = V4L2_CID_RED_BALANCE,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 1,
+//		.max = 7999,
+//		.def = 1000,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_CUSTOM_AWB_GAINS,
+//		.setter = ctrl_set_awb_gains,
+//	},
+//	{
+//		.id = V4L2_CID_BLUE_BALANCE,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 1,
+//		.max = 7999,
+//		.def = 1000,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_CUSTOM_AWB_GAINS,
+//		.setter = ctrl_set_awb_gains,
+//	},
+//	{
+//		.id = V4L2_CID_COLORFX,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = 0,
+//		.max = V4L2_COLORFX_SET_CBCR,
+//		.def = V4L2_COLORFX_NONE,
+//		.step = 0,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_IMAGE_EFFECT,
+//		.setter = ctrl_set_image_effect,
+//	},
+//	{
+//		.id = V4L2_CID_COLORFX_CBCR,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 0xffff,
+//		.def = 0x8080,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_COLOUR_EFFECT,
+//		.setter = ctrl_set_colfx,
+//	},
+//	{
+//		.id = V4L2_CID_ROTATE,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 360,
+//		.def = 0,
+//		.step = 90,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_ROTATION,
+//		.setter = ctrl_set_rotate,
+//	},
+//	{
+//		.id = V4L2_CID_HFLIP,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 1,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_MIRROR,
+//		.setter = ctrl_set_flip,
+//	},
+//	{
+//		.id = V4L2_CID_VFLIP,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 1,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_MIRROR,
+//		.setter = ctrl_set_flip,
+//	},
+//	{
+//		.id = V4L2_CID_MPEG_VIDEO_BITRATE_MODE,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = 0,
+//		.max = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR,
+//		.def = 0,
+//		.step = 0,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_RATECONTROL,
+//		.setter = ctrl_set_bitrate_mode,
+//	},
+//	{
+//		.id = V4L2_CID_MPEG_VIDEO_BITRATE,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 25 * 1000,
+//		.max = 25 * 1000 * 1000,
+//		.def = 10 * 1000 * 1000,
+//		.step = 25 * 1000,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_VIDEO_BIT_RATE,
+//		.setter = ctrl_set_bitrate,
+//	},
+//	{
+//		.id = V4L2_CID_JPEG_COMPRESSION_QUALITY,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 1,
+//		.max = 100,
+//		.def = 30,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_JPEG_Q_FACTOR,
+//		.setter = ctrl_set_image_encode_output,
+//	},
+//	{
+//		.id = V4L2_CID_POWER_LINE_FREQUENCY,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = 0,
+//		.max = V4L2_CID_POWER_LINE_FREQUENCY_AUTO,
+//		.def = 1,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_FLICKER_AVOID,
+//		.setter = ctrl_set_flicker_avoidance,
+//	},
+//	{
+//		.id = V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 1,
+//		.def = 0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_VIDEO_ENCODE_INLINE_HEADER,
+//		.setter = ctrl_set_video_encode_param_output,
+//	},
+//	{
+//		.id = V4L2_CID_MPEG_VIDEO_H264_PROFILE,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = ~(BIT(V4L2_MPEG_VIDEO_H264_PROFILE_BASELINE) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_PROFILE_CONSTRAINED_BASELINE) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_PROFILE_MAIN) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_PROFILE_HIGH)),
+//		.max = V4L2_MPEG_VIDEO_H264_PROFILE_HIGH,
+//		.def = V4L2_MPEG_VIDEO_H264_PROFILE_HIGH,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_PROFILE,
+//		.setter = ctrl_set_video_encode_profile_level,
+//	},
+//	{
+//		.id = V4L2_CID_MPEG_VIDEO_H264_LEVEL,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		.min = ~(BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_0) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1B) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_1) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_2) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_3) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_2_0) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_2_1) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_2_2) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_3_0) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_3_1) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_3_2) |
+//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_4_0)),
+//		.max = V4L2_MPEG_VIDEO_H264_LEVEL_4_0,
+//		.def = V4L2_MPEG_VIDEO_H264_LEVEL_4_0,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_PROFILE,
+//		.setter = ctrl_set_video_encode_profile_level,
+//	},
+//	{
+//		.id = V4L2_CID_SCENE_MODE,
+//		.type = MMAL_CONTROL_TYPE_STD_MENU,
+//		/* mask is computed at runtime */
+//		.min = -1,
+//		.max = V4L2_SCENE_MODE_TEXT,
+//		.def = V4L2_SCENE_MODE_NONE,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_PROFILE,
+//		.setter = ctrl_set_scene_mode,
+//	},
+//	{
+//		.id = V4L2_CID_MPEG_VIDEO_H264_I_PERIOD,
+//		.type = MMAL_CONTROL_TYPE_STD,
+//		.min = 0,
+//		.max = 0x7FFFFFFF,
+//		.def = 60,
+//		.step = 1,
+//		.imenu = NULL,
+//		.mmal_id = MMAL_PARAMETER_INTRAPERIOD,
+//		.setter = ctrl_set_video_encode_param_output,
+//	},
+//};
+
 //#define  OV5647_WHITE_BALANCE_MODE 0x5180
 //#define  OV5647_WHITE_BALANCE_MANUAL 0x08
 //#define  OV5647_WHITE_BALANCE_AUTO 0x08
@@ -1793,9 +2135,85 @@ static int ov5647_s_blue_balance(struct v4l2_subdev *sd, u32 val)
     return ov5647_write(sd, 0x518b, val & 0xff);
 }
 
+//static int ov5647_s_auto_n_preset_white_balance_ctrl(struct v4l2_ctrl *ctrl)
+//{
+//    printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl: %x %x\n", ctrl->id, ctrl->val);
+//
+//    struct ov5647 *sensor = container_of(ctrl->handler,
+//                                         struct ov5647, ctrls);
+//    struct v4l2_subdev *sd = &sensor->sd;
+//    struct i2c_client *client = v4l2_get_subdevdata(sd);
+//    int ret = 0;
+//
+//    /*
+//     * If the device is not powered up do not apply any controls
+//     * to H/W at this time. Instead the controls will be restored
+//     * at s_stream(1) time.
+//     */
+//    if (pm_runtime_get_if_in_use(&client->dev) == 0)
+//        return 0;
+//
+//    switch (ctrl->id)
+//    {
+//    case V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE:
+//
+//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
+//
+//        ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
+//        break;
+//    case V4L2_WHITE_BALANCE_MANUAL:
+//
+//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_WHITE_BALANCE_MANUAL: %x %x\n", ctrl->id, ctrl->val);
+//
+//        ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
+//        break;
+//    case V4L2_WHITE_BALANCE_AUTO:
+//
+//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_WHITE_BALANCE_AUTO: %x %x\n", ctrl->id, ctrl->val);
+//
+//        ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
+//        break;
+//
+////    case V4L2_CID_RED_BALANCE:
+////
+////        //printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_RED_BALANCE: %x %x\n", ctrl->id, ctrl->val);
+////
+////        ret =  ov5647_s_red_balance(sd, ctrl->val);
+////        break;
+////
+////    case V4L2_CID_GAIN:
+////
+////        //printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_GAIN: %x %x\n", ctrl->id, ctrl->val);
+////
+////        ret =  ov5647_s_gain(sd, ctrl->val);
+////        break;
+////
+////    case V4L2_CID_BLUE_BALANCE:
+////
+////        //printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_BLUE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
+////
+////        ret =  ov5647_s_blue_balance(sd, ctrl->val);
+////        break;
+//
+//    default:
+//
+//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl default: %x %x\n", ctrl->id, ctrl->val);
+//
+//        dev_info(&client->dev,
+//                 "ov5647_s_auto_n_preset_white_balance_ctrl Control (id:0x%x, val:0x%x) not supported\n",
+//                 ctrl->id, ctrl->val);
+//        return -EINVAL;
+//    }
+//
+//    pm_runtime_put(&client->dev);
+//
+//    return ret;
+//}
+
+
 static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
 {
-    //printk(KERN_ERR "ov5647_s_ctrl: %x %x\n", ctrl->id, ctrl->val);
+    printk(KERN_ERR "ov5647_s_ctrl: %x %x\n", ctrl->id, ctrl->val);
 
     struct ov5647 *sensor = container_of(ctrl->handler,
                                          struct ov5647, ctrls);
@@ -1831,87 +2249,99 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
     {
     case V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
 
         ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
         break;
+//    case V4L2_WHITE_BALANCE_MANUAL:
+//
+//        printk(KERN_ERR "ov5647_s_ctrl V4L2_WHITE_BALANCE_MANUAL: %x %x\n", ctrl->id, ctrl->val);
+//
+//        ret = ov5647_s_auto_white_balance(sd, ctrl->val);
+//        break;
+//    case V4L2_WHITE_BALANCE_AUTO:
+//
+//        printk(KERN_ERR "ov5647_s_ctrl V4L2_WHITE_BALANCE_AUTO: %x %x\n", ctrl->id, ctrl->val);
+//
+//        ret = ov5647_s_auto_white_balance(sd, ctrl->val);
+//        break;
 //    case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
 //
-//        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_WHITE_BALANCE_TEMPERATURE: %x %x\n", ctrl->id, ctrl->val);
+//        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_WHITE_BALANCE_TEMPERATURE: %x %x\n", ctrl->id, ctrl->val);
 //
 //        ret = ov5647_s_auto_white_balance_control(sd, ctrl->val);
 //        break;
     case V4L2_CID_AUTO_WHITE_BALANCE:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
 
         ret = ov5647_s_auto_white_balance(sd, ctrl->val);
         break;
     case V4L2_CID_AUTOGAIN:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTOGAIN: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTOGAIN: %x %x\n", ctrl->id, ctrl->val);
 
         ret = ov5647_s_autogain(sd, ctrl->val);
         break;
     case V4L2_CID_EXPOSURE_AUTO:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_EXPOSURE_AUTO: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_EXPOSURE_AUTO: %x %x\n", ctrl->id, ctrl->val);
 
         ret = ov5647_s_exposure_auto(sd, ctrl->val);
         break;
     case V4L2_CID_ANALOGUE_GAIN:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_ANALOGUE_GAIN: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_ANALOGUE_GAIN: %x %x\n", ctrl->id, ctrl->val);
 
         ret =  ov5647_s_analogue_gain(sd, ctrl->val);
         break;
     case V4L2_CID_EXPOSURE:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_EXPOSURE: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_EXPOSURE: %x %x\n", ctrl->id, ctrl->val);
 
         ret = ov5647_s_exposure(sd, ctrl->val);
         break;
     case V4L2_CID_VBLANK:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_VBLANK: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_VBLANK: %x %x\n", ctrl->id, ctrl->val);
 
         ret = ov5647_write16(sd, OV5647_REG_VTS_HI,
                              sensor->mode->format.height + ctrl->val);
         break;
 
-    /* Read-only, but we adjust it based on mode. */
+//     Read-only, but we adjust it based on mode.
     case V4L2_CID_PIXEL_RATE:
     case V4L2_CID_HBLANK:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_PIXEL_RATE: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_PIXEL_RATE: %x %x\n", ctrl->id, ctrl->val);
 
         /* Read-only, but we adjust it based on mode. */
         break;
 
     case V4L2_CID_RED_BALANCE:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_RED_BALANCE: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_RED_BALANCE: %x %x\n", ctrl->id, ctrl->val);
 
         ret =  ov5647_s_red_balance(sd, ctrl->val);
         break;
 
     case V4L2_CID_GAIN:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_GAIN: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_GAIN: %x %x\n", ctrl->id, ctrl->val);
 
         ret =  ov5647_s_gain(sd, ctrl->val);
         break;
 
     case V4L2_CID_BLUE_BALANCE:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_BLUE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_BLUE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
 
         ret =  ov5647_s_blue_balance(sd, ctrl->val);
         break;
 
     default:
 
-        ////printk(KERN_ERR "ov5647_s_ctrl default: %x %x\n", ctrl->id, ctrl->val);
+        printk(KERN_ERR "ov5647_s_ctrl default: %x %x\n", ctrl->id, ctrl->val);
 
         dev_info(&client->dev,
                  "Control (id:0x%x, val:0x%x) not supported\n",
@@ -1924,6 +2354,11 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
     return ret;
 }
 
+//static const struct v4l2_ctrl_ops ov5647_auto_n_preset_white_balance_ctrl_ops =
+//{
+//    .s_ctrl = ov5647_s_auto_n_preset_white_balance_ctrl,
+//};
+
 static const struct v4l2_ctrl_ops ov5647_ctrl_ops =
 {
     .s_ctrl = ov5647_s_ctrl,
@@ -1935,12 +2370,12 @@ static int ov5647_init_controls(struct ov5647 *sensor)
 
     struct i2c_client *client = v4l2_get_subdevdata(&sensor->sd);
     int hblank, exposure_max, exposure_def;
-	struct ov5647_ctrls *ctrls = &sensor->ctrls;
+//	struct ov5647_ctrls *ctrls = &sensor->ctrls;
 
     v4l2_ctrl_handler_init(&sensor->ctrls, 12);
 
     /* White balance */
-    ctrls->auto_wb = v4l2_ctrl_new_std_menu(&sensor->ctrls,
+    sensor->auto_wb = v4l2_ctrl_new_std_menu(&sensor->ctrls,
                                             &ov5647_ctrl_ops,
                                             V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
                                             V4L2_WHITE_BALANCE_AUTO,
