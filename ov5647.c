@@ -62,6 +62,26 @@
 #define OV5647_REG_AWB			0x5001
 #define OV5647_AWB_CTRL			0x5180
 
+//#define OV5647_AWB_MODE				0x5180
+//#define  OV5647_AWB_MODE_INCANDESCENT		0x0000
+//#define  OV5647_AWB_MODE_FLUORESCENT1		0x0001
+//#define  OV5647_AWB_MODE_FLUORESCENT2		0x0002
+//#define  OV5647_AWB_MODE_DAYLIGHT			0x0003
+//#define  OV5647_AWB_MODE_CLOUDY			0x0004
+//#define  OV5647_AWB_MODE_AUTO			0x0005
+
+#define  OV5647_WHITE_BALANCE_MODE 0x5180
+#define  OV5647_WHITE_BALANCE_MANUAL 0x08
+#define  OV5647_WHITE_BALANCE_AUTO 0x00
+//#define  OV5647_WHITE_BALANCE_INCANDESCENT 0x08
+//#define  OV5647_WHITE_BALANCE_FLUORESCENT 0x08
+//#define  OV5647_WHITE_BALANCE_FLUORESCENT_H 0x08
+//#define  OV5647_WHITE_BALANCE_HORIZON 0x08
+//#define  OV5647_WHITE_BALANCE_DAYLIGHT 0x08
+//#define  OV5647_WHITE_BALANCE_FLASH 0x08
+//#define  OV5647_WHITE_BALANCE_CLOUDY 0x08
+//#define  OV5647_WHITE_BALANCE_SHADE 0x08
+
 #define REG_TERM 0xfffe
 #define VAL_TERM 0xfe
 #define REG_DLY  0xffff
@@ -83,12 +103,14 @@
 #define OV5647_EXPOSURE_DEFAULT		1000
 #define OV5647_EXPOSURE_MAX		65535
 
-struct regval_list {
+struct regval_list
+{
     u16 addr;
     u8 data;
 };
 
-struct ov5647_mode {
+struct ov5647_mode
+{
     struct v4l2_mbus_framefmt	format;
     struct v4l2_rect		crop;
     u64				pixel_rate;
@@ -97,8 +119,37 @@ struct ov5647_mode {
     const struct regval_list	*reg_list;
     unsigned int			num_regs;
 };
+struct ov5647_ctrls {
+	struct v4l2_ctrl_handler handler;
+	struct v4l2_ctrl *pixel_rate;
+	struct v4l2_ctrl *link_freq;
+	struct v4l2_ctrl *hblank;
+	struct v4l2_ctrl *vblank;
+	struct {
+		struct v4l2_ctrl *auto_exp;
+		struct v4l2_ctrl *exposure;
+	};
+	struct {
+		struct v4l2_ctrl *auto_wb;
+		struct v4l2_ctrl *blue_balance;
+		struct v4l2_ctrl *red_balance;
+	};
+	struct {
+		struct v4l2_ctrl *auto_gain;
+		struct v4l2_ctrl *gain;
+	};
+	struct v4l2_ctrl *brightness;
+	struct v4l2_ctrl *light_freq;
+	struct v4l2_ctrl *saturation;
+	struct v4l2_ctrl *contrast;
+	struct v4l2_ctrl *hue;
+	struct v4l2_ctrl *test_pattern;
+	struct v4l2_ctrl *hflip;
+	struct v4l2_ctrl *vflip;
+};
 
-struct ov5647 {
+struct ov5647
+{
     struct v4l2_subdev		sd;
     struct media_pad		pad;
     struct mutex			lock;
@@ -106,6 +157,7 @@ struct ov5647 {
     struct gpio_desc		*pwdn;
     bool				clock_ncont;
     struct v4l2_ctrl_handler	ctrls;
+	struct ov5647_ctrls ctrls_new;
     const struct ov5647_mode	*mode;
     struct v4l2_ctrl		*pixel_rate;
     struct v4l2_ctrl		*hblank;
@@ -114,25 +166,29 @@ struct ov5647 {
     bool				streaming;
 };
 
-static inline struct ov5647 *to_sensor(struct v4l2_subdev *sd) {
+static inline struct ov5647 *to_sensor(struct v4l2_subdev *sd)
+{
     ////printk(KERN_ERR "ov5647_write16: %x %x\n", sd, 0);
 
     return container_of(sd, struct ov5647, sd);
 }
 
-static const struct regval_list sensor_oe_disable_regs[] = {
+static const struct regval_list sensor_oe_disable_regs[] =
+{
     {0x3000, 0x00},
     {0x3001, 0x00},
     {0x3002, 0x00},
 };
 
-static const struct regval_list sensor_oe_enable_regs[] = {
+static const struct regval_list sensor_oe_enable_regs[] =
+{
     {0x3000, 0x0f},
     {0x3001, 0xff},
     {0x3002, 0xe4},
 };
 
-static struct regval_list ov5647_2592x1944_10bpp[] = {
+static struct regval_list ov5647_2592x1944_10bpp[] =
+{
     {0x0100, 0x00},
     {0x0103, 0x01},
     {0x3034, 0x1a},
@@ -227,7 +283,8 @@ static struct regval_list ov5647_2592x1944_10bpp[] = {
 //  {0x518b, 0x70},// ; manual blue gain low
 };
 
-static struct regval_list ov5647_1080p30_10bpp[] = {
+static struct regval_list ov5647_1080p30_10bpp[] =
+{
     {0x0100, 0x00},
     {0x0103, 0x01},
     {0x3034, 0x1a},
@@ -418,7 +475,8 @@ static struct regval_list ov5647_1080p30_10bpp[] = {
 //    {0x0100, 0x01},
 //};
 
-static struct regval_list ov5647_1280x960p30_10bpp[] = {
+static struct regval_list ov5647_1280x960p30_10bpp[] =
+{
     {0x0100, 0x00},
     {0x0103, 0x01},
     {0x3034, 0x1a},
@@ -521,7 +579,8 @@ static struct regval_list ov5647_1280x960p30_10bpp[] = {
 //  {0x518b, 0x70},// ; manual blue gain low
 };
 
-static struct regval_list ov5647_720p30_10bpp[] = {
+static struct regval_list ov5647_720p30_10bpp[] =
+{
     {0x0100, 0x00},
     {0x0103, 0x01},
     {0x3034, 0x1a},
@@ -629,7 +688,8 @@ static struct regval_list ov5647_720p30_10bpp[] = {
 //  {0x518b, 0x00},// ; manual blue gain low
 //  {0x5000, 0x06},// ; lenc off, bpc on, wpc on
 
-static struct regval_list ov5647_640x480_10bpp[] = {
+static struct regval_list ov5647_640x480_10bpp[] =
+{
     {0x0100, 0x00},
     {0x0103, 0x01},
     {0x3035, 0x11},
@@ -725,7 +785,8 @@ static struct regval_list ov5647_640x480_10bpp[] = {
 //  {0x518b, 0x70},// ; manual blue gain low
 };
 
-static const struct ov5647_mode ov5647_modes[] = {
+static const struct ov5647_mode ov5647_modes[] =
+{
     /* 2592x1944 full resolution full FOV 10-bit mode. */
     {
         .format = {
@@ -858,7 +919,8 @@ static const struct ov5647_mode ov5647_modes[] = {
 #define OV5647_DEFAULT_MODE	(&ov5647_modes[3])
 #define OV5647_DEFAULT_FORMAT	(ov5647_modes[3].format)
 
-static int ov5647_write16(struct v4l2_subdev *sd, u16 reg, u16 val) {
+static int ov5647_write16(struct v4l2_subdev *sd, u16 reg, u16 val)
+{
     ////printk(KERN_ERR "ov5647_write16: %x %x\n", reg, val);
 
     unsigned char data[4] = { reg >> 8, reg & 0xff, val >> 8, val & 0xff};
@@ -866,7 +928,8 @@ static int ov5647_write16(struct v4l2_subdev *sd, u16 reg, u16 val) {
     int ret;
 
     ret = i2c_master_send(client, data, 4);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_dbg(&client->dev, "%s: i2c write error, reg: %x\n",
                 __func__, reg);
         return ret;
@@ -875,7 +938,8 @@ static int ov5647_write16(struct v4l2_subdev *sd, u16 reg, u16 val) {
     return 0;
 }
 
-static int ov5647_write(struct v4l2_subdev *sd, u16 reg, u8 val) {
+static int ov5647_write(struct v4l2_subdev *sd, u16 reg, u8 val)
+{
     ////printk(KERN_ERR "ov5647_write: %x %x\n", reg, val);
 
     unsigned char data[3] = { reg >> 8, reg & 0xff, val};
@@ -883,7 +947,8 @@ static int ov5647_write(struct v4l2_subdev *sd, u16 reg, u8 val) {
     int ret;
 
     ret = i2c_master_send(client, data, 3);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_dbg(&client->dev, "%s: i2c write error, reg: %x\n",
                 __func__, reg);
         return ret;
@@ -892,21 +957,24 @@ static int ov5647_write(struct v4l2_subdev *sd, u16 reg, u8 val) {
     return 0;
 }
 
-static int ov5647_read(struct v4l2_subdev *sd, u16 reg, u8 *val) {
+static int ov5647_read(struct v4l2_subdev *sd, u16 reg, u8 *val)
+{
 
     unsigned char data_w[2] = { reg >> 8, reg & 0xff };
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     int ret;
 
     ret = i2c_master_send(client, data_w, 2);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_dbg(&client->dev, "%s: i2c write error, reg: %x\n",
                 __func__, reg);
         return ret;
     }
 
     ret = i2c_master_recv(client, val, 1);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_dbg(&client->dev, "%s: i2c read error, reg: %x\n",
                 __func__, reg);
         return ret;
@@ -917,12 +985,14 @@ static int ov5647_read(struct v4l2_subdev *sd, u16 reg, u8 *val) {
 }
 
 static int ov5647_write_array(struct v4l2_subdev *sd,
-                              const struct regval_list *regs, int array_size) {
+                              const struct regval_list *regs, int array_size)
+{
     ////printk(KERN_ERR "ov5647_write_array: %x %x\n", regs, array_size);
 
     int i, ret;
 
-    for (i = 0; i < array_size; i++) {
+    for (i = 0; i < array_size; i++)
+    {
         ret = ov5647_write(sd, regs[i].addr, regs[i].data);
         if (ret < 0)
             return ret;
@@ -931,7 +1001,8 @@ static int ov5647_write_array(struct v4l2_subdev *sd,
     return 0;
 }
 
-static int ov5647_set_virtual_channel(struct v4l2_subdev *sd, int channel) {
+static int ov5647_set_virtual_channel(struct v4l2_subdev *sd, int channel)
+{
     ////printk(KERN_ERR "ov5647_write16: %x %x\n", sd, channel);
 
     u8 channel_id;
@@ -947,7 +1018,8 @@ static int ov5647_set_virtual_channel(struct v4l2_subdev *sd, int channel) {
                         channel_id | (channel << 6));
 }
 
-static int ov5647_set_mode(struct v4l2_subdev *sd) {
+static int ov5647_set_mode(struct v4l2_subdev *sd)
+{
     ////printk(KERN_ERR "ov5647_set_mode: %x %x\n", sd, 0);
 
     struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -961,7 +1033,8 @@ static int ov5647_set_mode(struct v4l2_subdev *sd) {
 
     ret = ov5647_write_array(sd, sensor->mode->reg_list,
                              sensor->mode->num_regs);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_err(&client->dev, "write sensor default regs error\n");
         return ret;
     }
@@ -974,7 +1047,8 @@ static int ov5647_set_mode(struct v4l2_subdev *sd) {
     if (ret < 0)
         return ret;
 
-    if (!(resetval & 0x01)) {
+    if (!(resetval & 0x01))
+    {
         dev_err(&client->dev, "Device was in SW standby");
         ret = ov5647_write(sd, OV5647_SW_STANDBY, 0x01);
         if (ret < 0)
@@ -984,7 +1058,8 @@ static int ov5647_set_mode(struct v4l2_subdev *sd) {
     return 0;
 }
 
-static int ov5647_stream_on(struct v4l2_subdev *sd) {
+static int ov5647_stream_on(struct v4l2_subdev *sd)
+{
     ////printk(KERN_ERR "ov5647_stream_on: %x %x\n", sd, 0);
 
     struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -993,7 +1068,8 @@ static int ov5647_stream_on(struct v4l2_subdev *sd) {
     int ret;
 
     ret = ov5647_set_mode(sd);
-    if (ret) {
+    if (ret)
+    {
         dev_err(&client->dev, "Failed to program sensor mode: %d\n", ret);
         return ret;
     }
@@ -1018,7 +1094,8 @@ static int ov5647_stream_on(struct v4l2_subdev *sd) {
     return ov5647_write(sd, OV5647_REG_PAD_OUT, 0x00);
 }
 
-static int ov5647_stream_off(struct v4l2_subdev *sd) {
+static int ov5647_stream_off(struct v4l2_subdev *sd)
+{
     ////printk(KERN_ERR "ov5647_stream_off: %x %x\n", sd, 0);
 
     int ret;
@@ -1036,7 +1113,8 @@ static int ov5647_stream_off(struct v4l2_subdev *sd) {
     return ov5647_write(sd, OV5647_REG_PAD_OUT, 0x01);
 }
 
-static int ov5647_power_on(struct device *dev) {
+static int ov5647_power_on(struct device *dev)
+{
     ////printk(KERN_ERR "ov5647_power_on: %x %x\n", dev, 0);
 
     struct ov5647 *sensor = dev_get_drvdata(dev);
@@ -1044,27 +1122,31 @@ static int ov5647_power_on(struct device *dev) {
 
     dev_dbg(dev, "OV5647 power on\n");
 
-    if (sensor->pwdn) {
+    if (sensor->pwdn)
+    {
         gpiod_set_value_cansleep(sensor->pwdn, 0);
         msleep(PWDN_ACTIVE_DELAY_MS);
     }
 
     ret = clk_prepare_enable(sensor->xclk);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_err(dev, "clk prepare enable failed\n");
         goto error_pwdn;
     }
 
     ret = ov5647_write_array(&sensor->sd, sensor_oe_enable_regs,
                              ARRAY_SIZE(sensor_oe_enable_regs));
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_err(dev, "write sensor_oe_enable_regs error\n");
         goto error_clk_disable;
     }
 
     /* Stream off to coax lanes into LP-11 state. */
     ret = ov5647_stream_off(&sensor->sd);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         dev_err(dev, "camera not available, check power\n");
         goto error_clk_disable;
     }
@@ -1079,7 +1161,8 @@ error_pwdn:
     return ret;
 }
 
-static int ov5647_power_off(struct device *dev) {
+static int ov5647_power_off(struct device *dev)
+{
     ////printk(KERN_ERR "ov5647_power_off: %x %x\n", dev, 0);
 
     struct ov5647 *sensor = dev_get_drvdata(dev);
@@ -1111,7 +1194,8 @@ static int ov5647_power_off(struct device *dev) {
 
 #ifdef CONFIG_VIDEO_ADV_DEBUG
 static int ov5647_sensor_get_register(struct v4l2_subdev *sd,
-                                      struct v4l2_dbg_register *reg) {
+                                      struct v4l2_dbg_register *reg)
+{
     int ret;
     u8 val;
 
@@ -1128,7 +1212,8 @@ static int ov5647_sensor_get_register(struct v4l2_subdev *sd,
 }
 
 static int ov5647_sensor_set_register(struct v4l2_subdev *sd,
-                                      const struct v4l2_dbg_register *reg) {
+                                      const struct v4l2_dbg_register *reg)
+{
     ////printk(KERN_ERR "ov5647_sensor_set_register: %x %x\n", reg->reg, reg->val);
 
     return ov5647_write(sd, reg->reg & 0xff, reg->val & 0xff);
@@ -1136,7 +1221,8 @@ static int ov5647_sensor_set_register(struct v4l2_subdev *sd,
 #endif
 
 /* Subdev core operations registration */
-static const struct v4l2_subdev_core_ops ov5647_subdev_core_ops = {
+static const struct v4l2_subdev_core_ops ov5647_subdev_core_ops =
+{
     .subscribe_event	= v4l2_ctrl_subdev_subscribe_event,
     .unsubscribe_event	= v4l2_event_subdev_unsubscribe,
 #ifdef CONFIG_VIDEO_ADV_DEBUG
@@ -1156,7 +1242,8 @@ __ov5647_get_pad_crop(struct ov5647 *ov5647,
 {
     ////printk(KERN_ERR "__ov5647_get_pad_crop: %x %x\n", pad, which);
 
-    switch (which) {
+    switch (which)
+    {
     case V4L2_SUBDEV_FORMAT_TRY:
         ////printk(KERN_ERR "__ov5647_get_pad_crop V4L2_SUBDEV_FORMAT_TRY: %x %x\n", pad, which);
         return v4l2_subdev_get_try_crop(&ov5647->sd, sd_state, pad);
@@ -1171,7 +1258,8 @@ __ov5647_get_pad_crop(struct ov5647 *ov5647,
     return NULL;
 }
 
-static int ov5647_s_stream(struct v4l2_subdev *sd, int enable) {
+static int ov5647_s_stream(struct v4l2_subdev *sd, int enable)
+{
     ////printk(KERN_ERR "ov5647_s_stream: %x %x\n", sd, enable);
 
     struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -1179,24 +1267,30 @@ static int ov5647_s_stream(struct v4l2_subdev *sd, int enable) {
     int ret;
 
     mutex_lock(&sensor->lock);
-    if (sensor->streaming == enable) {
+    if (sensor->streaming == enable)
+    {
         mutex_unlock(&sensor->lock);
         return 0;
     }
 
-    if (enable) {
+    if (enable)
+    {
         ret = pm_runtime_resume_and_get(&client->dev);
         if (ret < 0)
             goto error_unlock;
 
         ret = ov5647_stream_on(sd);
-        if (ret < 0) {
+        if (ret < 0)
+        {
             dev_err(&client->dev, "stream start failed: %d\n", ret);
             goto error_pm;
         }
-    } else {
+    }
+    else
+    {
         ret = ov5647_stream_off(sd);
-        if (ret < 0) {
+        if (ret < 0)
+        {
             dev_err(&client->dev, "stream stop failed: %d\n", ret);
             goto error_pm;
         }
@@ -1216,7 +1310,8 @@ error_unlock:
     return ret;
 }
 
-static const struct v4l2_subdev_video_ops ov5647_subdev_video_ops = {
+static const struct v4l2_subdev_video_ops ov5647_subdev_video_ops =
+{
     .s_stream =		ov5647_s_stream,
 };
 
@@ -1280,7 +1375,8 @@ static int ov5647_get_pad_fmt(struct v4l2_subdev *sd,
     struct ov5647 *sensor = to_sensor(sd);
 
     mutex_lock(&sensor->lock);
-    switch (format->which) {
+    switch (format->which)
+    {
     case V4L2_SUBDEV_FORMAT_TRY:
         ////printk(KERN_ERR "ov5647_get_pad_fmt V4L2_SUBDEV_FORMAT_TRY: %x %x\n", sd_state, format->which);
         sensor_format = v4l2_subdev_get_try_format(sd, sd_state,
@@ -1320,10 +1416,13 @@ static int ov5647_set_pad_fmt(struct v4l2_subdev *sd,
 
     /* Update the sensor mode and apply at it at streamon time. */
     mutex_lock(&sensor->lock);
-    if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
+    if (format->which == V4L2_SUBDEV_FORMAT_TRY)
+    {
         *v4l2_subdev_get_try_format(sd, sd_state, format->pad) = mode->format;
 //        *v4l2_subdev_get_try_format(sd, cfg, format->pad) = mode->format;
-    } else {
+    }
+    else
+    {
         int exposure_max, exposure_def;
         int hblank, vblank;
 
@@ -1362,7 +1461,8 @@ static int ov5647_get_selection(struct v4l2_subdev *sd,
 //                                struct v4l2_subdev_selection *sel)
 {
 
-    switch (sel->target) {
+    switch (sel->target)
+    {
     case V4L2_SEL_TGT_CROP:
         ////printk(KERN_ERR "ov5647_get_selection V4L2_SEL_TGT_CROP: %x %x\n", sd, sel->target);
         {
@@ -1416,7 +1516,8 @@ static int ov5647_get_selection(struct v4l2_subdev *sd,
     return -EINVAL;
 }
 
-static const struct v4l2_subdev_pad_ops ov5647_subdev_pad_ops = {
+static const struct v4l2_subdev_pad_ops ov5647_subdev_pad_ops =
+{
     .enum_mbus_code		= ov5647_enum_mbus_code,
     .enum_frame_size	= ov5647_enum_frame_size,
     .set_fmt		= ov5647_set_pad_fmt,
@@ -1424,13 +1525,15 @@ static const struct v4l2_subdev_pad_ops ov5647_subdev_pad_ops = {
 //	.get_selection		= ov5647_get_selection,
 };
 
-static const struct v4l2_subdev_ops ov5647_subdev_ops = {
+static const struct v4l2_subdev_ops ov5647_subdev_ops =
+{
     .core		= &ov5647_subdev_core_ops,
     .video		= &ov5647_subdev_video_ops,
     .pad		= &ov5647_subdev_pad_ops,
 };
 
-static int ov5647_detect(struct v4l2_subdev *sd) {
+static int ov5647_detect(struct v4l2_subdev *sd)
+{
     ////printk(KERN_ERR "ov5647_detect: %x %x\n", sd, 0);
 
     struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -1448,7 +1551,8 @@ static int ov5647_detect(struct v4l2_subdev *sd) {
 
     read2 = read;
 
-    if (read != 0x56) {
+    if (read != 0x56)
+    {
         ////printk(KERN_ERR "ov5647_detect ID High expected 0x56 got: %x %x\n", sd, read);
         dev_err(&client->dev, "ID High expected 0x56 got %x", read);
         return -ENODEV;
@@ -1458,7 +1562,8 @@ static int ov5647_detect(struct v4l2_subdev *sd) {
     if (ret < 0)
         return ret;
 
-    if (read != 0x47) {
+    if (read != 0x47)
+    {
         ////printk(KERN_ERR "ov5647_detect ID Low expected 0x47 got: %x %x\n", sd, read);
         dev_err(&client->dev, "ID Low expected 0x47 got %x", read);
         return -ENODEV;
@@ -1468,7 +1573,8 @@ static int ov5647_detect(struct v4l2_subdev *sd) {
     return ov5647_write(sd, OV5647_SW_RESET, 0x00);
 }
 
-static int ov5647_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh) {
+static int ov5647_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
+{
 
     ////printk(KERN_ERR "ov5647_open: %d %d\n", sd, fh);
 
@@ -1506,23 +1612,70 @@ static int ov5647_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh) {
     return 0;
 }
 
-static const struct v4l2_subdev_internal_ops ov5647_subdev_internal_ops = {
+static const struct v4l2_subdev_internal_ops ov5647_subdev_internal_ops =
+{
     .open = ov5647_open,
 };
 
-static int ov5647_s_auto_white_balance_control(struct v4l2_subdev *sd, u32 val) {
-    ////printk(KERN_ERR "ov5647_s_auto_white_balance_control: %x %x\n", sd, val);
+//#define  OV5647_WHITE_BALANCE_MODE 0x5180
+//#define  OV5647_WHITE_BALANCE_MANUAL 0x08
+//#define  OV5647_WHITE_BALANCE_AUTO 0x08
+//#define  OV5647_WHITE_BALANCE_INCANDESCENT 0x08
+//#define  OV5647_WHITE_BALANCE_FLUORESCENT 0x08
+//#define  OV5647_WHITE_BALANCE_FLUORESCENT_H 0x08
+//#define  OV5647_WHITE_BALANCE_HORIZON 0x08
+//#define  OV5647_WHITE_BALANCE_DAYLIGHT 0x08
+//#define  OV5647_WHITE_BALANCE_FLASH 0x08
+//#define  OV5647_WHITE_BALANCE_CLOUDY 0x08
+//#define  OV5647_WHITE_BALANCE_SHADE 0x08
+static int ov5647_s_auto_n_preset_white_balance(struct v4l2_subdev *sd, u32 val)
+{
+    printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance: %x %x\n", sd, val);
+    static const unsigned short wb[][2] =
+    {
+        { V4L2_WHITE_BALANCE_MANUAL,      OV5647_WHITE_BALANCE_MANUAL},
+        { V4L2_WHITE_BALANCE_AUTO,          OV5647_WHITE_BALANCE_AUTO},
+//		{ V4L2_WHITE_BALANCE_INCANDESCENT,  OV5647_AWB_MODE_INCANDESCENT},
+//		{ V4L2_WHITE_BALANCE_FLUORESCENT,   OV5647_AWB_MODE_FLUORESCENT1},
+//		{ V4L2_WHITE_BALANCE_FLUORESCENT_H, OV5647_AWB_MODE_FLUORESCENT2},
+//		{ V4L2_WHITE_BALANCE_CLOUDY,        OV5647_AWB_MODE_CLOUDY},
+    };
+    int i;
 
-    return ov5647_write(sd, OV5647_AWB_CTRL, val & 0xff);
+    for (i = 0; i < ARRAY_SIZE(wb); i++)
+    {
+        if (wb[i][0] != val)
+            continue;
+
+//		v4l2_dbg(1, s5c73m3_dbg, &state->sensor_sd,
+//			 "Setting white balance to: %s\n",
+//			 v4l2_ctrl_get_menu(state->ctrls.auto_wb->id)[i]);
+
+        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance 2: %x %x\n", sd, wb[i][1]);
+        return ov5647_write(sd, OV5647_WHITE_BALANCE_MODE, wb[i][1] & 0xff);
+//        return s5c73m3_isp_command(state, OV5647_AWB_MODE, wb[i][1]);
+    }
+
+    printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance 3: %x %x\n", sd, wb[i][1]);
+    return -EINVAL;
 }
 
-static int ov5647_s_auto_white_balance(struct v4l2_subdev *sd, u32 val) {
+//static int ov5647_s_auto_white_balance_control(struct v4l2_subdev *sd, u32 val)
+//{
+//    ////printk(KERN_ERR "ov5647_s_auto_white_balance_control: %x %x\n", sd, val);
+//
+//    return ov5647_write(sd, OV5647_AWB_CTRL, val & 0xff);
+//}
+
+static int ov5647_s_auto_white_balance(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_auto_white_balance: %x %x\n", sd, val);
 
     return ov5647_write(sd, OV5647_REG_AWB, val ? 1 : 0);
 }
 
-static int ov5647_s_autogain(struct v4l2_subdev *sd, u32 val) {
+static int ov5647_s_autogain(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_autogain: %x %x\n", sd, val);
 
     int ret;
@@ -1537,7 +1690,8 @@ static int ov5647_s_autogain(struct v4l2_subdev *sd, u32 val) {
                         : reg | BIT(1));
 }
 
-static int ov5647_s_exposure_auto(struct v4l2_subdev *sd, u32 val) {
+static int ov5647_s_exposure_auto(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_exposure_auto: %x %x\n", sd, val);
 
     int ret;
@@ -1556,7 +1710,8 @@ static int ov5647_s_exposure_auto(struct v4l2_subdev *sd, u32 val) {
                         : reg & ~BIT(0));
 }
 
-static int ov5647_s_analogue_gain(struct v4l2_subdev *sd, u32 val) {
+static int ov5647_s_analogue_gain(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_analogue_gain: %x %x\n", sd, val);
 
     int ret;
@@ -1569,7 +1724,8 @@ static int ov5647_s_analogue_gain(struct v4l2_subdev *sd, u32 val) {
     return ov5647_write(sd, OV5647_REG_GAIN_LO, val & 0xff);
 }
 
-static int ov5647_s_exposure(struct v4l2_subdev *sd, u32 val) {
+static int ov5647_s_exposure(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_exposure: %x %x\n", sd, val);
 
     int ret;
@@ -1595,7 +1751,8 @@ static int ov5647_s_exposure(struct v4l2_subdev *sd, u32 val) {
 //  {0x5189, 0x00},// ; manual green gain low
 //  {0x518a, 0x74},// ; manual blue gain high
 //  {0x518b, 0x70},// ; manual blue gain low
-static int ov5647_s_gain(struct v4l2_subdev *sd, u32 val) {
+static int ov5647_s_gain(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_gain: %x %x\n", sd, val);
 
     int ret;
@@ -1608,7 +1765,8 @@ static int ov5647_s_gain(struct v4l2_subdev *sd, u32 val) {
     return ov5647_write(sd, 0x5189, val & 0xff);
 }
 
-static int ov5647_s_red_balance(struct v4l2_subdev *sd, u32 val) {
+static int ov5647_s_red_balance(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_red_balance: %x %x\n", sd, val);
 
     int ret;
@@ -1621,7 +1779,8 @@ static int ov5647_s_red_balance(struct v4l2_subdev *sd, u32 val) {
     return ov5647_write(sd, 0x5187, val & 0xff);
 }
 
-static int ov5647_s_blue_balance(struct v4l2_subdev *sd, u32 val) {
+static int ov5647_s_blue_balance(struct v4l2_subdev *sd, u32 val)
+{
     ////printk(KERN_ERR "ov5647_s_blue_balance: %x %x\n", sd, val);
 
     int ret;
@@ -1634,7 +1793,8 @@ static int ov5647_s_blue_balance(struct v4l2_subdev *sd, u32 val) {
     return ov5647_write(sd, 0x518b, val & 0xff);
 }
 
-static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl) {
+static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
+{
     //printk(KERN_ERR "ov5647_s_ctrl: %x %x\n", ctrl->id, ctrl->val);
 
     struct ov5647 *sensor = container_of(ctrl->handler,
@@ -1646,7 +1806,8 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl) {
 
     /* v4l2_ctrl_lock() locks our own mutex */
 
-    if (ctrl->id == V4L2_CID_VBLANK) {
+    if (ctrl->id == V4L2_CID_VBLANK)
+    {
         int exposure_max, exposure_def;
 
         /* Update max exposure while meeting expected vblanking */
@@ -1666,13 +1827,20 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl) {
     if (pm_runtime_get_if_in_use(&client->dev) == 0)
         return 0;
 
-    switch (ctrl->id) {
-    case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
+    switch (ctrl->id)
+    {
+    case V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE:
 
-        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_WHITE_BALANCE_TEMPERATURE: %x %x\n", ctrl->id, ctrl->val);
+        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
 
-        ret = ov5647_s_auto_white_balance_control(sd, ctrl->val);
+        ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
         break;
+//    case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
+//
+//        //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_WHITE_BALANCE_TEMPERATURE: %x %x\n", ctrl->id, ctrl->val);
+//
+//        ret = ov5647_s_auto_white_balance_control(sd, ctrl->val);
+//        break;
     case V4L2_CID_AUTO_WHITE_BALANCE:
 
         //printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
@@ -1756,23 +1924,37 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl) {
     return ret;
 }
 
-static const struct v4l2_ctrl_ops ov5647_ctrl_ops = {
+static const struct v4l2_ctrl_ops ov5647_ctrl_ops =
+{
     .s_ctrl = ov5647_s_ctrl,
 };
 
-static int ov5647_init_controls(struct ov5647 *sensor) {
+static int ov5647_init_controls(struct ov5647 *sensor)
+{
     ////printk(KERN_ERR "ov5647_init_controls: %x %x\n", sensor, 0);
 
     struct i2c_client *client = v4l2_get_subdevdata(&sensor->sd);
     int hblank, exposure_max, exposure_def;
+	struct ov5647_ctrls *ctrls = &sensor->ctrls;
 
     v4l2_ctrl_handler_init(&sensor->ctrls, 12);
+
+    /* White balance */
+    ctrls->auto_wb = v4l2_ctrl_new_std_menu(&sensor->ctrls,
+                                            &ov5647_ctrl_ops,
+                                            V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
+                                            V4L2_WHITE_BALANCE_AUTO,
+                                            0,
+                                            V4L2_WHITE_BALANCE_AUTO);
+//	ctrls->auto_wb = v4l2_ctrl_new_std_menu(hdl, ops,
+//			V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
+//			9, ~0x15e, V4L2_WHITE_BALANCE_AUTO);
 
     v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
                       V4L2_CID_AUTOGAIN, 0, 1, 1, 0);
 
-    v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
-                      V4L2_CID_WHITE_BALANCE_TEMPERATURE, 0, 0xff, 1, 0);
+//    v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
+//                      V4L2_CID_WHITE_BALANCE_TEMPERATURE, 0, 0xff, 1, 0);
 
     v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
                       V4L2_CID_AUTO_WHITE_BALANCE, 0, 1, 1, 0);
@@ -1837,10 +2019,12 @@ handler_free:
     return sensor->ctrls.error;
 }
 
-static int ov5647_parse_dt(struct ov5647 *sensor, struct device_node *np) {
+static int ov5647_parse_dt(struct ov5647 *sensor, struct device_node *np)
+{
     ////printk(KERN_ERR "ov5647_parse_dt: %x %x\n", np, 0);
 
-    struct v4l2_fwnode_endpoint bus_cfg = {
+    struct v4l2_fwnode_endpoint bus_cfg =
+    {
         .bus_type = V4L2_MBUS_CSI2_DPHY,
     };
     struct device_node *ep;
@@ -1864,7 +2048,8 @@ out:
     return ret;
 }
 
-static int ov5647_probe(struct i2c_client *client) {
+static int ov5647_probe(struct i2c_client *client)
+{
     ////printk(KERN_ERR "ov5647_probe: %x %x\n", client, 0);
 
     struct device_node *np = client->dev.of_node;
@@ -1878,16 +2063,19 @@ static int ov5647_probe(struct i2c_client *client) {
     if (!sensor)
         return -ENOMEM;
 
-    if (IS_ENABLED(CONFIG_OF) && np) {
+    if (IS_ENABLED(CONFIG_OF) && np)
+    {
         ret = ov5647_parse_dt(sensor, np);
-        if (ret) {
+        if (ret)
+        {
             dev_err(dev, "DT parsing error: %d\n", ret);
             return ret;
         }
     }
 
     sensor->xclk = devm_clk_get(dev, NULL);
-    if (IS_ERR(sensor->xclk)) {
+    if (IS_ERR(sensor->xclk))
+    {
         dev_err(dev, "could not get xclk");
         return PTR_ERR(sensor->xclk);
     }
@@ -1895,7 +2083,8 @@ static int ov5647_probe(struct i2c_client *client) {
     ////printk(KERN_ERR "ov5647_probe sensor->xclk: %x %d\n", client, sensor->xclk);
 
     xclk_freq = clk_get_rate(sensor->xclk);
-    if (xclk_freq != 25000000) {
+    if (xclk_freq != 25000000)
+    {
         dev_err(dev, "Unsupported clock frequency: %u\n", xclk_freq);
         return -EINVAL;
     }
@@ -1905,7 +2094,8 @@ static int ov5647_probe(struct i2c_client *client) {
 
     /* Request the power down GPIO asserted. */
     sensor->pwdn = devm_gpiod_get_optional(dev, "pwdn", GPIOD_OUT_HIGH);
-    if (IS_ERR(sensor->pwdn)) {
+    if (IS_ERR(sensor->pwdn))
+    {
         dev_err(dev, "Failed to get 'pwdn' gpio\n");
         return -EINVAL;
     }
@@ -1985,25 +2175,29 @@ static void ov5647_remove(struct i2c_client *client)
 //    return 0;
 }
 
-static const struct dev_pm_ops ov5647_pm_ops = {
+static const struct dev_pm_ops ov5647_pm_ops =
+{
     SET_RUNTIME_PM_OPS(ov5647_power_off, ov5647_power_on, NULL)
 };
 
-static const struct i2c_device_id ov5647_id[] = {
+static const struct i2c_device_id ov5647_id[] =
+{
     { "ov5647", 0 },
     { /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(i2c, ov5647_id);
 
 #if IS_ENABLED(CONFIG_OF)
-static const struct of_device_id ov5647_of_match[] = {
+static const struct of_device_id ov5647_of_match[] =
+{
     { .compatible = "ovti,ov5647" },
     { /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(of, ov5647_of_match);
 #endif
 
-static struct i2c_driver ov5647_driver = {
+static struct i2c_driver ov5647_driver =
+{
     .driver = {
         .of_match_table = of_match_ptr(ov5647_of_match),
         .name	= "ov5647",
