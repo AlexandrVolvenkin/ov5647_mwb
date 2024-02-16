@@ -60,15 +60,6 @@
 #define OV5647_REG_MIPI_CTRL00		0x4800
 #define OV5647_REG_MIPI_CTRL14		0x4814
 #define OV5647_REG_AWB			0x5001
-#define OV5647_AWB_CTRL			0x5180
-
-//#define OV5647_AWB_MODE				0x5180
-//#define  OV5647_AWB_MODE_INCANDESCENT		0x0000
-//#define  OV5647_AWB_MODE_FLUORESCENT1		0x0001
-//#define  OV5647_AWB_MODE_FLUORESCENT2		0x0002
-//#define  OV5647_AWB_MODE_DAYLIGHT			0x0003
-//#define  OV5647_AWB_MODE_CLOUDY			0x0004
-//#define  OV5647_AWB_MODE_AUTO			0x0005
 
 #define  OV5647_WHITE_BALANCE_MODE 0x5180
 #define  OV5647_WHITE_BALANCE_MANUAL 0x08
@@ -120,35 +111,6 @@ struct ov5647_mode
     unsigned int			num_regs;
 };
 
-struct ov5647_ctrls {
-	struct v4l2_ctrl_handler handler;
-	struct v4l2_ctrl *pixel_rate;
-	struct v4l2_ctrl *link_freq;
-	struct v4l2_ctrl *hblank;
-	struct v4l2_ctrl *vblank;
-	struct {
-		struct v4l2_ctrl *auto_exp;
-		struct v4l2_ctrl *exposure;
-	};
-	struct {
-		struct v4l2_ctrl *auto_wb;
-		struct v4l2_ctrl *blue_balance;
-		struct v4l2_ctrl *red_balance;
-	};
-	struct {
-		struct v4l2_ctrl *auto_gain;
-		struct v4l2_ctrl *gain;
-	};
-	struct v4l2_ctrl *brightness;
-	struct v4l2_ctrl *light_freq;
-	struct v4l2_ctrl *saturation;
-	struct v4l2_ctrl *contrast;
-	struct v4l2_ctrl *hue;
-	struct v4l2_ctrl *test_pattern;
-	struct v4l2_ctrl *hflip;
-	struct v4l2_ctrl *vflip;
-};
-
 struct ov5647
 {
     struct v4l2_subdev		sd;
@@ -158,7 +120,6 @@ struct ov5647
     struct gpio_desc		*pwdn;
     bool				clock_ncont;
     struct v4l2_ctrl_handler	ctrls;
-	struct ov5647_ctrls ctrls_new;
     const struct ov5647_mode	*mode;
     struct v4l2_ctrl		*pixel_rate;
     struct v4l2_ctrl		*hblank;
@@ -170,8 +131,6 @@ struct ov5647
 
 static inline struct ov5647 *to_sensor(struct v4l2_subdev *sd)
 {
-    ////printk(KERN_ERR "ov5647_write16: %x %x\n", sd, 0);
-
     return container_of(sd, struct ov5647, sd);
 }
 
@@ -277,12 +236,6 @@ static struct regval_list ov5647_2592x1944_10bpp[] =
     {0x4800, 0x24},
     {0x3503, 0x03},
     {0x0100, 0x01},
-//  {0x5186, 0x54},// ; manual red gain high
-//  {0x5187, 0x50},// ; manual red gain low
-//  {0x5188, 0x04},// ; manual green gain high
-//  {0x5189, 0x00},// ; manual green gain low
-//  {0x518a, 0x74},// ; manual blue gain high
-//  {0x518b, 0x70},// ; manual blue gain low
 };
 
 static struct regval_list ov5647_1080p30_10bpp[] =
@@ -373,12 +326,6 @@ static struct regval_list ov5647_1080p30_10bpp[] =
     {0x4800, 0x34},
     {0x3503, 0x03},
     {0x0100, 0x01},
-//  {0x5186, 0x54},// ; manual red gain high
-//  {0x5187, 0x50},// ; manual red gain low
-//  {0x5188, 0x04},// ; manual green gain high
-//  {0x5189, 0x00},// ; manual green gain low
-//  {0x518a, 0x74},// ; manual blue gain high
-//  {0x518b, 0x70},// ; manual blue gain low
 };
 
 //static struct regval_list ov5647_2x2binned_10bpp[] =
@@ -507,12 +454,12 @@ static struct regval_list ov5647_1280x960p30_10bpp[] =
     {0x3c01, 0x80},
     {0x3b07, 0x0c},
 
-    {0x3800, 0x00},// ; X Start
+    {0x3800, 0x00},
     {0x3801, 0x18},
     {0x3802, 0x00},
     {0x3803, 0x0e},
 
-    {0x3804, 0x0a},// ; X End
+    {0x3804, 0x0a},
     {0x3805, 0x3f},
     {0x3806, 0x07},
     {0x3807, 0xa3},
@@ -573,12 +520,6 @@ static struct regval_list ov5647_1280x960p30_10bpp[] =
     {0x3502, 0xf0},
     {0x3212, 0xa0},
     {0x0100, 0x01},
-//  {0x5186, 0x54},// ; manual red gain high
-//  {0x5187, 0x50},// ; manual red gain low
-//  {0x5188, 0x04},// ; manual green gain high
-//  {0x5189, 0x00},// ; manual green gain low
-//  {0x518a, 0x74},// ; manual blue gain high
-//  {0x518b, 0x70},// ; manual blue gain low
 };
 
 static struct regval_list ov5647_720p30_10bpp[] =
@@ -619,19 +560,19 @@ static struct regval_list ov5647_720p30_10bpp[] =
     {0x3708, 0x64},
     {0x3709, 0x12},
 
-    {0x3808, 0x05},// ; X OUTPUT SIZE = 1280
+    {0x3808, 0x05},
     {0x3809, 0x00},
-    {0x380a, 0x02},// ; Y OUTPUT SIZE = 720
+    {0x380a, 0x02},
     {0x380b, 0xd0},
 
-    {0x3800, 0x01},// ; X Start
+    {0x3800, 0x01},
     {0x3801, 0x5c},
-    {0x3802, 0x01},// ; Y Start
+    {0x3802, 0x01},
     {0x3803, 0xb2},
 
-    {0x3804, 0x06},// ; X End
+    {0x3804, 0x06},
     {0x3805, 0x63},
-    {0x3806, 0x04},// ; Y End
+    {0x3806, 0x04},
     {0x3807, 0x89},
 
     {0x3811, 0x04},
@@ -673,22 +614,7 @@ static struct regval_list ov5647_720p30_10bpp[] =
     {0x4800, 0x34},
     {0x3503, 0x03},
     {0x0100, 0x01},
-//  {0x5186, 0x54},// ; manual red gain high
-//  {0x5187, 0x50},// ; manual red gain low
-//  {0x5188, 0x04},// ; manual green gain high
-//  {0x5189, 0x00},// ; manual green gain low
-//  {0x518a, 0x74},// ; manual blue gain high
-//  {0x518b, 0x70},// ; manual blue gain low
 };
-
-
-//  {0x5186, 0x04},// ; manual red gain high
-//  {0x5187, 0x00},// ; manual red gain low
-//  {0x5188, 0x04},// ; manual green gain high
-//  {0x5189, 0x00},// ; manual green gain low
-//  {0x518a, 0x04},// ; manual blue gain high
-//  {0x518b, 0x00},// ; manual blue gain low
-//  {0x5000, 0x06},// ; lenc off, bpc on, wpc on
 
 static struct regval_list ov5647_640x480_10bpp[] =
 {
@@ -779,12 +705,6 @@ static struct regval_list ov5647_640x480_10bpp[] =
     {0x4800, 0x34},
     {0x3503, 0x03},
     {0x0100, 0x01},
-//  {0x5186, 0x54},// ; manual red gain high
-//  {0x5187, 0x50},// ; manual red gain low
-//  {0x5188, 0x04},// ; manual green gain high
-//  {0x5189, 0x00},// ; manual green gain low
-//  {0x518a, 0x74},// ; manual blue gain high
-//  {0x518b, 0x70},// ; manual blue gain low
 };
 
 static const struct ov5647_mode ov5647_modes[] =
@@ -923,8 +843,6 @@ static const struct ov5647_mode ov5647_modes[] =
 
 static int ov5647_write16(struct v4l2_subdev *sd, u16 reg, u16 val)
 {
-    ////printk(KERN_ERR "ov5647_write16: %x %x\n", reg, val);
-
     unsigned char data[4] = { reg >> 8, reg & 0xff, val >> 8, val & 0xff};
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     int ret;
@@ -942,8 +860,6 @@ static int ov5647_write16(struct v4l2_subdev *sd, u16 reg, u16 val)
 
 static int ov5647_write(struct v4l2_subdev *sd, u16 reg, u8 val)
 {
-    ////printk(KERN_ERR "ov5647_write: %x %x\n", reg, val);
-
     unsigned char data[3] = { reg >> 8, reg & 0xff, val};
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     int ret;
@@ -961,7 +877,6 @@ static int ov5647_write(struct v4l2_subdev *sd, u16 reg, u8 val)
 
 static int ov5647_read(struct v4l2_subdev *sd, u16 reg, u8 *val)
 {
-
     unsigned char data_w[2] = { reg >> 8, reg & 0xff };
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     int ret;
@@ -989,8 +904,6 @@ static int ov5647_read(struct v4l2_subdev *sd, u16 reg, u8 *val)
 static int ov5647_write_array(struct v4l2_subdev *sd,
                               const struct regval_list *regs, int array_size)
 {
-    ////printk(KERN_ERR "ov5647_write_array: %x %x\n", regs, array_size);
-
     int i, ret;
 
     for (i = 0; i < array_size; i++)
@@ -1005,8 +918,6 @@ static int ov5647_write_array(struct v4l2_subdev *sd,
 
 static int ov5647_set_virtual_channel(struct v4l2_subdev *sd, int channel)
 {
-    ////printk(KERN_ERR "ov5647_write16: %x %x\n", sd, channel);
-
     u8 channel_id;
     int ret;
 
@@ -1022,8 +933,6 @@ static int ov5647_set_virtual_channel(struct v4l2_subdev *sd, int channel)
 
 static int ov5647_set_mode(struct v4l2_subdev *sd)
 {
-    ////printk(KERN_ERR "ov5647_set_mode: %x %x\n", sd, 0);
-
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     struct ov5647 *sensor = to_sensor(sd);
     u8 resetval, rdval;
@@ -1062,8 +971,6 @@ static int ov5647_set_mode(struct v4l2_subdev *sd)
 
 static int ov5647_stream_on(struct v4l2_subdev *sd)
 {
-    ////printk(KERN_ERR "ov5647_stream_on: %x %x\n", sd, 0);
-
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     struct ov5647 *sensor = to_sensor(sd);
     u8 val = MIPI_CTRL00_BUS_IDLE;
@@ -1098,8 +1005,6 @@ static int ov5647_stream_on(struct v4l2_subdev *sd)
 
 static int ov5647_stream_off(struct v4l2_subdev *sd)
 {
-    ////printk(KERN_ERR "ov5647_stream_off: %x %x\n", sd, 0);
-
     int ret;
 
     ret = ov5647_write(sd, OV5647_REG_MIPI_CTRL00,
@@ -1117,8 +1022,6 @@ static int ov5647_stream_off(struct v4l2_subdev *sd)
 
 static int ov5647_power_on(struct device *dev)
 {
-    ////printk(KERN_ERR "ov5647_power_on: %x %x\n", dev, 0);
-
     struct ov5647 *sensor = dev_get_drvdata(dev);
     int ret;
 
@@ -1165,8 +1068,6 @@ error_pwdn:
 
 static int ov5647_power_off(struct device *dev)
 {
-    ////printk(KERN_ERR "ov5647_power_off: %x %x\n", dev, 0);
-
     struct ov5647 *sensor = dev_get_drvdata(dev);
     u8 rdval;
     int ret;
@@ -1208,16 +1109,12 @@ static int ov5647_sensor_get_register(struct v4l2_subdev *sd,
     reg->val = val;
     reg->size = 1;
 
-    ////printk(KERN_ERR "ov5647_sensor_get_register: %x %x\n", reg->val, reg->size);
-
     return 0;
 }
 
 static int ov5647_sensor_set_register(struct v4l2_subdev *sd,
                                       const struct v4l2_dbg_register *reg)
 {
-    ////printk(KERN_ERR "ov5647_sensor_set_register: %x %x\n", reg->reg, reg->val);
-
     return ov5647_write(sd, reg->reg & 0xff, reg->val & 0xff);
 }
 #endif
@@ -1237,23 +1134,12 @@ static const struct v4l2_rect *
 __ov5647_get_pad_crop(struct ov5647 *ov5647,
                       struct v4l2_subdev_state *sd_state,
                       unsigned int pad, enum v4l2_subdev_format_whence which)
-//static const struct v4l2_rect *
-//__ov5647_get_pad_crop(struct ov5647 *ov5647,
-//                      struct v4l2_subdev_pad_config *cfg,
-//                      unsigned int pad, enum v4l2_subdev_format_whence which)
 {
-    ////printk(KERN_ERR "__ov5647_get_pad_crop: %x %x\n", pad, which);
-
     switch (which)
     {
     case V4L2_SUBDEV_FORMAT_TRY:
-        ////printk(KERN_ERR "__ov5647_get_pad_crop V4L2_SUBDEV_FORMAT_TRY: %x %x\n", pad, which);
         return v4l2_subdev_get_try_crop(&ov5647->sd, sd_state, pad);
-//    case V4L2_SUBDEV_FORMAT_TRY:
-//        ////printk(KERN_ERR "__ov5647_get_pad_crop V4L2_SUBDEV_FORMAT_TRY: %x %x\n", pad, which);
-//        return v4l2_subdev_get_try_crop(&ov5647->sd, cfg, pad);
     case V4L2_SUBDEV_FORMAT_ACTIVE:
-        ////printk(KERN_ERR "__ov5647_get_pad_crop V4L2_SUBDEV_FORMAT_ACTIVE: %x %x\n", pad, which);
         return &ov5647->mode->crop;
     }
 
@@ -1262,8 +1148,6 @@ __ov5647_get_pad_crop(struct ov5647 *ov5647,
 
 static int ov5647_s_stream(struct v4l2_subdev *sd, int enable)
 {
-    ////printk(KERN_ERR "ov5647_s_stream: %x %x\n", sd, enable);
-
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     struct ov5647 *sensor = to_sensor(sd);
     int ret;
@@ -1320,16 +1204,11 @@ static const struct v4l2_subdev_video_ops ov5647_subdev_video_ops =
 static int ov5647_enum_mbus_code(struct v4l2_subdev *sd,
                                  struct v4l2_subdev_state *sd_state,
                                  struct v4l2_subdev_mbus_code_enum *code)
-//static int ov5647_enum_mbus_code(struct v4l2_subdev *sd,
-//                                 struct v4l2_subdev_pad_config *cfg,
-//                                 struct v4l2_subdev_mbus_code_enum *code)
 {
     if (code->index > 0)
         return -EINVAL;
 
     code->code = MEDIA_BUS_FMT_SBGGR10_1X10;
-
-    ////printk(KERN_ERR "ov5647_enum_mbus_code: %x %x\n", code->index, code->code);
 
     return 0;
 }
@@ -1337,12 +1216,7 @@ static int ov5647_enum_mbus_code(struct v4l2_subdev *sd,
 static int ov5647_enum_frame_size(struct v4l2_subdev *sd,
                                   struct v4l2_subdev_state *sd_state,
                                   struct v4l2_subdev_frame_size_enum *fse)
-//static int ov5647_enum_frame_size(struct v4l2_subdev *sd,
-//                                  struct v4l2_subdev_pad_config *cfg,
-//                                  struct v4l2_subdev_frame_size_enum *fse)
 {
-    ////printk(KERN_ERR "ov5647_enum_frame_size: %x %x\n", fse->index, fse->code);
-
     const struct v4l2_mbus_framefmt *fmt;
 
     if (fse->code != MEDIA_BUS_FMT_SBGGR10_1X10 ||
@@ -1355,23 +1229,13 @@ static int ov5647_enum_frame_size(struct v4l2_subdev *sd,
     fse->min_height = fmt->height;
     fse->max_height = fmt->height;
 
-    ////printk(KERN_ERR "fse->min_width: %d\n", fse->min_width);
-    ////printk(KERN_ERR "fse->max_width: %d\n", fse->max_width);
-    ////printk(KERN_ERR "fse->min_height: %d\n", fse->min_height);
-    ////printk(KERN_ERR "fse->max_height: %d\n", fse->max_height);
-
     return 0;
 }
 
 static int ov5647_get_pad_fmt(struct v4l2_subdev *sd,
                               struct v4l2_subdev_state *sd_state,
                               struct v4l2_subdev_format *format)
-//static int ov5647_get_pad_fmt(struct v4l2_subdev *sd,
-//                              struct v4l2_subdev_pad_config *cfg,
-//                              struct v4l2_subdev_format *format)
 {
-    ////printk(KERN_ERR "ov5647_get_pad_fmt: %x %x\n", sd_state, format->which);
-
     struct v4l2_mbus_framefmt *fmt = &format->format;
     const struct v4l2_mbus_framefmt *sensor_format;
     struct ov5647 *sensor = to_sensor(sd);
@@ -1380,14 +1244,10 @@ static int ov5647_get_pad_fmt(struct v4l2_subdev *sd,
     switch (format->which)
     {
     case V4L2_SUBDEV_FORMAT_TRY:
-        ////printk(KERN_ERR "ov5647_get_pad_fmt V4L2_SUBDEV_FORMAT_TRY: %x %x\n", sd_state, format->which);
         sensor_format = v4l2_subdev_get_try_format(sd, sd_state,
                         format->pad);
-//        sensor_format = v4l2_subdev_get_try_format(sd, cfg,
-//                        format->pad);
         break;
     default:
-        ////printk(KERN_ERR "ov5647_get_pad_fmt V4L2_SUBDEV_FORMAT_ACTIVE: %x %x\n", sd_state, format->which);
         sensor_format = &sensor->mode->format;
         break;
     }
@@ -1401,9 +1261,6 @@ static int ov5647_get_pad_fmt(struct v4l2_subdev *sd,
 static int ov5647_set_pad_fmt(struct v4l2_subdev *sd,
                               struct v4l2_subdev_state *sd_state,
                               struct v4l2_subdev_format *format)
-//static int ov5647_set_pad_fmt(struct v4l2_subdev *sd,
-//                              struct v4l2_subdev_pad_config *cfg,
-//                              struct v4l2_subdev_format *format)
 {
     struct v4l2_mbus_framefmt *fmt = &format->format;
     struct ov5647 *sensor = to_sensor(sd);
@@ -1413,15 +1270,11 @@ static int ov5647_set_pad_fmt(struct v4l2_subdev *sd,
                                   format.width, format.height,
                                   fmt->width, fmt->height);
 
-//    ////printk(KERN_ERR "ov5647_set_pad_fmt format.width: %x %x\n", format.width, format.height);
-    ////printk(KERN_ERR "ov5647_set_pad_fmt fmt->width: %d %d\n", fmt->width, fmt->height);
-
     /* Update the sensor mode and apply at it at streamon time. */
     mutex_lock(&sensor->lock);
     if (format->which == V4L2_SUBDEV_FORMAT_TRY)
     {
         *v4l2_subdev_get_try_format(sd, sd_state, format->pad) = mode->format;
-//        *v4l2_subdev_get_try_format(sd, cfg, format->pad) = mode->format;
     }
     else
     {
@@ -1458,59 +1311,36 @@ static int ov5647_set_pad_fmt(struct v4l2_subdev *sd,
 static int ov5647_get_selection(struct v4l2_subdev *sd,
                                 struct v4l2_subdev_state *sd_state,
                                 struct v4l2_subdev_selection *sel)
-//static int ov5647_get_selection(struct v4l2_subdev *sd,
-//                                struct v4l2_subdev_pad_config *cfg,
-//                                struct v4l2_subdev_selection *sel)
 {
 
     switch (sel->target)
     {
     case V4L2_SEL_TGT_CROP:
-        ////printk(KERN_ERR "ov5647_get_selection V4L2_SEL_TGT_CROP: %x %x\n", sd, sel->target);
         {
             struct ov5647 *sensor = to_sensor(sd);
 
             mutex_lock(&sensor->lock);
             sel->r = *__ov5647_get_pad_crop(sensor, sd_state, sel->pad,
                                             sel->which);
-//            sel->r = *__ov5647_get_pad_crop(sensor, cfg, sel->pad,
-//                                            sel->which);
             mutex_unlock(&sensor->lock);
-
-            ////printk(KERN_ERR "ov5647_get_selection sel->r.top: %d\n", sel->r.top);
-            ////printk(KERN_ERR "ov5647_get_selection sel->r.left: %d\n", sel->r.left);
-            ////printk(KERN_ERR "ov5647_get_selection sel->r.width: %d\n", sel->r.width);
-            ////printk(KERN_ERR "ov5647_get_selection sel->r.height: %d\n", sel->r.height);
 
             return 0;
         }
 
     case V4L2_SEL_TGT_NATIVE_SIZE:
-        ////printk(KERN_ERR "ov5647_get_selection V4L2_SEL_TGT_NATIVE_SIZE: %x %x\n", sd, sel->target);
         sel->r.top = 0;
         sel->r.left = 0;
         sel->r.width = OV5647_NATIVE_WIDTH;
         sel->r.height = OV5647_NATIVE_HEIGHT;
 
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.top: %d\n", sel->r.top);
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.left: %d\n", sel->r.left);
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.width: %d\n", sel->r.width);
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.height: %d\n", sel->r.height);
-
         return 0;
 
     case V4L2_SEL_TGT_CROP_DEFAULT:
     case V4L2_SEL_TGT_CROP_BOUNDS:
-        ////printk(KERN_ERR "ov5647_get_selection V4L2_SEL_TGT_CROP_DEFAULT: %x %x\n", sd, sel->target);
         sel->r.top = OV5647_PIXEL_ARRAY_TOP;
         sel->r.left = OV5647_PIXEL_ARRAY_LEFT;
         sel->r.width = OV5647_PIXEL_ARRAY_WIDTH;
         sel->r.height = OV5647_PIXEL_ARRAY_HEIGHT;
-
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.top: %d\n", sel->r.top);
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.left: %d\n", sel->r.left);
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.width: %d\n", sel->r.width);
-        ////printk(KERN_ERR "ov5647_get_selection sel->r.height: %d\n", sel->r.height);
 
         return 0;
     }
@@ -1524,7 +1354,7 @@ static const struct v4l2_subdev_pad_ops ov5647_subdev_pad_ops =
     .enum_frame_size	= ov5647_enum_frame_size,
     .set_fmt		= ov5647_set_pad_fmt,
     .get_fmt		= ov5647_get_pad_fmt,
-//	.get_selection		= ov5647_get_selection,
+    .get_selection		= ov5647_get_selection,
 };
 
 static const struct v4l2_subdev_ops ov5647_subdev_ops =
@@ -1536,8 +1366,6 @@ static const struct v4l2_subdev_ops ov5647_subdev_ops =
 
 static int ov5647_detect(struct v4l2_subdev *sd)
 {
-    ////printk(KERN_ERR "ov5647_detect: %x %x\n", sd, 0);
-
     struct i2c_client *client = v4l2_get_subdevdata(sd);
     u8 read;
     u8 read2;
@@ -1555,7 +1383,6 @@ static int ov5647_detect(struct v4l2_subdev *sd)
 
     if (read != 0x56)
     {
-        ////printk(KERN_ERR "ov5647_detect ID High expected 0x56 got: %x %x\n", sd, read);
         dev_err(&client->dev, "ID High expected 0x56 got %x", read);
         return -ENODEV;
     }
@@ -1566,28 +1393,18 @@ static int ov5647_detect(struct v4l2_subdev *sd)
 
     if (read != 0x47)
     {
-        ////printk(KERN_ERR "ov5647_detect ID Low expected 0x47 got: %x %x\n", sd, read);
         dev_err(&client->dev, "ID Low expected 0x47 got %x", read);
         return -ENODEV;
     }
 
-    ////printk(KERN_ERR "ov5647_detect ok: %x %x\n", read, read2);
     return ov5647_write(sd, OV5647_SW_RESET, 0x00);
 }
 
 static int ov5647_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
-
-    ////printk(KERN_ERR "ov5647_open: %d %d\n", sd, fh);
-
     struct v4l2_mbus_framefmt *format =
         v4l2_subdev_get_try_format(sd, fh->state, 0);
     struct v4l2_rect *crop = v4l2_subdev_get_try_crop(sd, fh->state, 0);
-
-//    struct v4l2_mbus_framefmt *format =
-//        v4l2_subdev_get_try_format(sd, fh->pad, 0);
-//    struct v4l2_rect *crop = v4l2_subdev_get_try_crop(sd, fh->pad, 0);
-
 
     crop->left = OV5647_PIXEL_ARRAY_LEFT;
     crop->top = OV5647_PIXEL_ARRAY_TOP;
@@ -1595,21 +1412,6 @@ static int ov5647_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
     crop->height = OV5647_PIXEL_ARRAY_HEIGHT;
 
     *format = OV5647_DEFAULT_FORMAT;
-
-
-
-
-    ////printk(KERN_ERR "crop->left: %d\n", crop->left);
-    ////printk(KERN_ERR "crop->top: %d\n", crop->top);
-    ////printk(KERN_ERR "crop->width: %d\n", crop->width);
-    ////printk(KERN_ERR "crop->height: %d\n", crop->height);
-
-    ////printk(KERN_ERR "format->code: %d\n", format->code);
-
-    ////printk(KERN_ERR "format->width: %d\n", format->width);
-    ////printk(KERN_ERR "format->height: %d\n", format->height);
-    ////printk(KERN_ERR "format->field: %d\n", format->field);
-    ////printk(KERN_ERR "format->colorspace: %d\n", format->colorspace);
 
     return 0;
 }
@@ -1619,360 +1421,8 @@ static const struct v4l2_subdev_internal_ops ov5647_subdev_internal_ops =
     .open = ov5647_open,
 };
 
-
-//static const struct ov5647_v4l2_ctrl v4l2_ctrls[] = {
-//	{
-//		.id = V4L2_CID_SATURATION,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = -100,
-//		.max = 100,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_SATURATION,
-//		.setter = ctrl_set_rational,
-//	},
-//	{
-//		.id = V4L2_CID_SHARPNESS,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = -100,
-//		.max = 100,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_SHARPNESS,
-//		.setter = ctrl_set_rational,
-//	},
-//	{
-//		.id = V4L2_CID_CONTRAST,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = -100,
-//		.max = 100,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_CONTRAST,
-//		.setter = ctrl_set_rational,
-//	},
-//	{
-//		.id = V4L2_CID_BRIGHTNESS,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 100,
-//		.def = 50,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_BRIGHTNESS,
-//		.setter = ctrl_set_rational,
-//	},
-//	{
-//		.id = V4L2_CID_ISO_SENSITIVITY,
-//		.type = MMAL_CONTROL_TYPE_INT_MENU,
-//		.min = 0,
-//		.max = ARRAY_SIZE(iso_qmenu) - 1,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = iso_qmenu,
-//		.mmal_id = MMAL_PARAMETER_ISO,
-//		.setter = ctrl_set_iso,
-//	},
-//	{
-//		.id = V4L2_CID_ISO_SENSITIVITY_AUTO,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = 0,
-//		.max = V4L2_ISO_SENSITIVITY_AUTO,
-//		.def = V4L2_ISO_SENSITIVITY_AUTO,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_ISO,
-//		.setter = ctrl_set_iso,
-//	},
-//	{
-//		.id = V4L2_CID_IMAGE_STABILIZATION,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 1,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_VIDEO_STABILISATION,
-//		.setter = ctrl_set_value,
-//	},
-//	{
-//		.id = V4L2_CID_EXPOSURE_AUTO,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = ~0x03,
-//		.max = V4L2_EXPOSURE_APERTURE_PRIORITY,
-//		.def = V4L2_EXPOSURE_AUTO,
-//		.step = 0,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_EXPOSURE_MODE,
-//		.setter = ctrl_set_exposure,
-//	},
-//	{
-//		.id = V4L2_CID_EXPOSURE_ABSOLUTE,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		/* Units of 100usecs */
-//		.min = 1,
-//		.max = 1 * 1000 * 10,
-//		.def = 100 * 10,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_SHUTTER_SPEED,
-//		.setter = ctrl_set_exposure,
-//	},
-//	{
-//		.id = V4L2_CID_AUTO_EXPOSURE_BIAS,
-//		.type = MMAL_CONTROL_TYPE_INT_MENU,
-//		.min = 0,
-//		.max = ARRAY_SIZE(ev_bias_qmenu) - 1,
-//		.def = (ARRAY_SIZE(ev_bias_qmenu) + 1) / 2 - 1,
-//		.step = 0,
-//		.imenu = ev_bias_qmenu,
-//		.mmal_id = MMAL_PARAMETER_EXPOSURE_COMP,
-//		.setter = ctrl_set_value_ev,
-//	},
-//	{
-//		.id = V4L2_CID_EXPOSURE_AUTO_PRIORITY,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 1,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		/* Dummy MMAL ID as it gets mapped into FPS range */
-//		.mmal_id = 0,
-//		.setter = ctrl_set_exposure,
-//	},
-//	{
-//		.id = V4L2_CID_EXPOSURE_METERING,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = ~0xf,
-//		.max = V4L2_EXPOSURE_METERING_MATRIX,
-//		.def = V4L2_EXPOSURE_METERING_AVERAGE,
-//		.step = 0,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_EXP_METERING_MODE,
-//		.setter = ctrl_set_metering_mode,
-//	},
-//	{
-//		.id = V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = ~0x3ff,
-//		.max = V4L2_WHITE_BALANCE_SHADE,
-//		.def = V4L2_WHITE_BALANCE_AUTO,
-//		.step = 0,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_AWB_MODE,
-//		.setter = ctrl_set_awb_mode,
-//	},
-//	{
-//		.id = V4L2_CID_RED_BALANCE,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 1,
-//		.max = 7999,
-//		.def = 1000,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_CUSTOM_AWB_GAINS,
-//		.setter = ctrl_set_awb_gains,
-//	},
-//	{
-//		.id = V4L2_CID_BLUE_BALANCE,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 1,
-//		.max = 7999,
-//		.def = 1000,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_CUSTOM_AWB_GAINS,
-//		.setter = ctrl_set_awb_gains,
-//	},
-//	{
-//		.id = V4L2_CID_COLORFX,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = 0,
-//		.max = V4L2_COLORFX_SET_CBCR,
-//		.def = V4L2_COLORFX_NONE,
-//		.step = 0,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_IMAGE_EFFECT,
-//		.setter = ctrl_set_image_effect,
-//	},
-//	{
-//		.id = V4L2_CID_COLORFX_CBCR,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 0xffff,
-//		.def = 0x8080,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_COLOUR_EFFECT,
-//		.setter = ctrl_set_colfx,
-//	},
-//	{
-//		.id = V4L2_CID_ROTATE,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 360,
-//		.def = 0,
-//		.step = 90,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_ROTATION,
-//		.setter = ctrl_set_rotate,
-//	},
-//	{
-//		.id = V4L2_CID_HFLIP,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 1,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_MIRROR,
-//		.setter = ctrl_set_flip,
-//	},
-//	{
-//		.id = V4L2_CID_VFLIP,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 1,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_MIRROR,
-//		.setter = ctrl_set_flip,
-//	},
-//	{
-//		.id = V4L2_CID_MPEG_VIDEO_BITRATE_MODE,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = 0,
-//		.max = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR,
-//		.def = 0,
-//		.step = 0,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_RATECONTROL,
-//		.setter = ctrl_set_bitrate_mode,
-//	},
-//	{
-//		.id = V4L2_CID_MPEG_VIDEO_BITRATE,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 25 * 1000,
-//		.max = 25 * 1000 * 1000,
-//		.def = 10 * 1000 * 1000,
-//		.step = 25 * 1000,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_VIDEO_BIT_RATE,
-//		.setter = ctrl_set_bitrate,
-//	},
-//	{
-//		.id = V4L2_CID_JPEG_COMPRESSION_QUALITY,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 1,
-//		.max = 100,
-//		.def = 30,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_JPEG_Q_FACTOR,
-//		.setter = ctrl_set_image_encode_output,
-//	},
-//	{
-//		.id = V4L2_CID_POWER_LINE_FREQUENCY,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = 0,
-//		.max = V4L2_CID_POWER_LINE_FREQUENCY_AUTO,
-//		.def = 1,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_FLICKER_AVOID,
-//		.setter = ctrl_set_flicker_avoidance,
-//	},
-//	{
-//		.id = V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 1,
-//		.def = 0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_VIDEO_ENCODE_INLINE_HEADER,
-//		.setter = ctrl_set_video_encode_param_output,
-//	},
-//	{
-//		.id = V4L2_CID_MPEG_VIDEO_H264_PROFILE,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = ~(BIT(V4L2_MPEG_VIDEO_H264_PROFILE_BASELINE) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_PROFILE_CONSTRAINED_BASELINE) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_PROFILE_MAIN) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_PROFILE_HIGH)),
-//		.max = V4L2_MPEG_VIDEO_H264_PROFILE_HIGH,
-//		.def = V4L2_MPEG_VIDEO_H264_PROFILE_HIGH,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_PROFILE,
-//		.setter = ctrl_set_video_encode_profile_level,
-//	},
-//	{
-//		.id = V4L2_CID_MPEG_VIDEO_H264_LEVEL,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		.min = ~(BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_0) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1B) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_1) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_2) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_3) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_2_0) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_2_1) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_2_2) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_3_0) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_3_1) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_3_2) |
-//			 BIT(V4L2_MPEG_VIDEO_H264_LEVEL_4_0)),
-//		.max = V4L2_MPEG_VIDEO_H264_LEVEL_4_0,
-//		.def = V4L2_MPEG_VIDEO_H264_LEVEL_4_0,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_PROFILE,
-//		.setter = ctrl_set_video_encode_profile_level,
-//	},
-//	{
-//		.id = V4L2_CID_SCENE_MODE,
-//		.type = MMAL_CONTROL_TYPE_STD_MENU,
-//		/* mask is computed at runtime */
-//		.min = -1,
-//		.max = V4L2_SCENE_MODE_TEXT,
-//		.def = V4L2_SCENE_MODE_NONE,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_PROFILE,
-//		.setter = ctrl_set_scene_mode,
-//	},
-//	{
-//		.id = V4L2_CID_MPEG_VIDEO_H264_I_PERIOD,
-//		.type = MMAL_CONTROL_TYPE_STD,
-//		.min = 0,
-//		.max = 0x7FFFFFFF,
-//		.def = 60,
-//		.step = 1,
-//		.imenu = NULL,
-//		.mmal_id = MMAL_PARAMETER_INTRAPERIOD,
-//		.setter = ctrl_set_video_encode_param_output,
-//	},
-//};
-
-//#define  OV5647_WHITE_BALANCE_MODE 0x5180
-//#define  OV5647_WHITE_BALANCE_MANUAL 0x08
-//#define  OV5647_WHITE_BALANCE_AUTO 0x08
-//#define  OV5647_WHITE_BALANCE_INCANDESCENT 0x08
-//#define  OV5647_WHITE_BALANCE_FLUORESCENT 0x08
-//#define  OV5647_WHITE_BALANCE_FLUORESCENT_H 0x08
-//#define  OV5647_WHITE_BALANCE_HORIZON 0x08
-//#define  OV5647_WHITE_BALANCE_DAYLIGHT 0x08
-//#define  OV5647_WHITE_BALANCE_FLASH 0x08
-//#define  OV5647_WHITE_BALANCE_CLOUDY 0x08
-//#define  OV5647_WHITE_BALANCE_SHADE 0x08
 static int ov5647_s_auto_n_preset_white_balance(struct v4l2_subdev *sd, u32 val)
 {
-    printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance: %x %x\n", sd, val);
     static const unsigned short wb[][2] =
     {
         { V4L2_WHITE_BALANCE_MANUAL,      OV5647_WHITE_BALANCE_MANUAL},
@@ -1989,37 +1439,19 @@ static int ov5647_s_auto_n_preset_white_balance(struct v4l2_subdev *sd, u32 val)
         if (wb[i][0] != val)
             continue;
 
-//		v4l2_dbg(1, s5c73m3_dbg, &state->sensor_sd,
-//			 "Setting white balance to: %s\n",
-//			 v4l2_ctrl_get_menu(state->ctrls.auto_wb->id)[i]);
-
-        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance 2: %x %x\n", sd, wb[i][1]);
         return ov5647_write(sd, OV5647_WHITE_BALANCE_MODE, wb[i][1] & 0xff);
-//        return s5c73m3_isp_command(state, OV5647_AWB_MODE, wb[i][1]);
     }
 
-    printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance 3: %x %x\n", sd, wb[i][1]);
     return -EINVAL;
 }
 
-//static int ov5647_s_auto_white_balance_control(struct v4l2_subdev *sd, u32 val)
-//{
-//    ////printk(KERN_ERR "ov5647_s_auto_white_balance_control: %x %x\n", sd, val);
-//
-//    return ov5647_write(sd, OV5647_AWB_CTRL, val & 0xff);
-//}
-
 static int ov5647_s_auto_white_balance(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_auto_white_balance: %x %x\n", sd, val);
-
     return ov5647_write(sd, OV5647_REG_AWB, val ? 1 : 0);
 }
 
 static int ov5647_s_autogain(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_autogain: %x %x\n", sd, val);
-
     int ret;
     u8 reg;
 
@@ -2034,8 +1466,6 @@ static int ov5647_s_autogain(struct v4l2_subdev *sd, u32 val)
 
 static int ov5647_s_exposure_auto(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_exposure_auto: %x %x\n", sd, val);
-
     int ret;
     u8 reg;
 
@@ -2054,8 +1484,6 @@ static int ov5647_s_exposure_auto(struct v4l2_subdev *sd, u32 val)
 
 static int ov5647_s_analogue_gain(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_analogue_gain: %x %x\n", sd, val);
-
     int ret;
 
     /* 10 bits of gain, 2 in the high register. */
@@ -2068,8 +1496,6 @@ static int ov5647_s_analogue_gain(struct v4l2_subdev *sd, u32 val)
 
 static int ov5647_s_exposure(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_exposure: %x %x\n", sd, val);
-
     int ret;
 
     /*
@@ -2087,16 +1513,8 @@ static int ov5647_s_exposure(struct v4l2_subdev *sd, u32 val)
     return ov5647_write(sd, OV5647_REG_EXP_LO, (val & 0xf) << 4);
 }
 
-//  {0x5186, 0x54},// ; manual red gain high
-//  {0x5187, 0x50},// ; manual red gain low
-//  {0x5188, 0x04},// ; manual green gain high
-//  {0x5189, 0x00},// ; manual green gain low
-//  {0x518a, 0x74},// ; manual blue gain high
-//  {0x518b, 0x70},// ; manual blue gain low
 static int ov5647_s_gain(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_gain: %x %x\n", sd, val);
-
     int ret;
 
     /* 10 bits of gain, 2 in the high register. */
@@ -2109,8 +1527,6 @@ static int ov5647_s_gain(struct v4l2_subdev *sd, u32 val)
 
 static int ov5647_s_red_balance(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_red_balance: %x %x\n", sd, val);
-
     int ret;
 
     /* 10 bits of gain, 2 in the high register. */
@@ -2123,8 +1539,6 @@ static int ov5647_s_red_balance(struct v4l2_subdev *sd, u32 val)
 
 static int ov5647_s_blue_balance(struct v4l2_subdev *sd, u32 val)
 {
-    ////printk(KERN_ERR "ov5647_s_blue_balance: %x %x\n", sd, val);
-
     int ret;
 
     /* 10 bits of gain, 2 in the high register. */
@@ -2135,86 +1549,8 @@ static int ov5647_s_blue_balance(struct v4l2_subdev *sd, u32 val)
     return ov5647_write(sd, 0x518b, val & 0xff);
 }
 
-//static int ov5647_s_auto_n_preset_white_balance_ctrl(struct v4l2_ctrl *ctrl)
-//{
-//    printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl: %x %x\n", ctrl->id, ctrl->val);
-//
-//    struct ov5647 *sensor = container_of(ctrl->handler,
-//                                         struct ov5647, ctrls);
-//    struct v4l2_subdev *sd = &sensor->sd;
-//    struct i2c_client *client = v4l2_get_subdevdata(sd);
-//    int ret = 0;
-//
-//    /*
-//     * If the device is not powered up do not apply any controls
-//     * to H/W at this time. Instead the controls will be restored
-//     * at s_stream(1) time.
-//     */
-//    if (pm_runtime_get_if_in_use(&client->dev) == 0)
-//        return 0;
-//
-//    switch (ctrl->id)
-//    {
-//    case V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE:
-//
-//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
-//
-//        ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
-//        break;
-//    case V4L2_WHITE_BALANCE_MANUAL:
-//
-//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_WHITE_BALANCE_MANUAL: %x %x\n", ctrl->id, ctrl->val);
-//
-//        ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
-//        break;
-//    case V4L2_WHITE_BALANCE_AUTO:
-//
-//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_WHITE_BALANCE_AUTO: %x %x\n", ctrl->id, ctrl->val);
-//
-//        ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
-//        break;
-//
-////    case V4L2_CID_RED_BALANCE:
-////
-////        //printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_RED_BALANCE: %x %x\n", ctrl->id, ctrl->val);
-////
-////        ret =  ov5647_s_red_balance(sd, ctrl->val);
-////        break;
-////
-////    case V4L2_CID_GAIN:
-////
-////        //printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_GAIN: %x %x\n", ctrl->id, ctrl->val);
-////
-////        ret =  ov5647_s_gain(sd, ctrl->val);
-////        break;
-////
-////    case V4L2_CID_BLUE_BALANCE:
-////
-////        //printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl V4L2_CID_BLUE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
-////
-////        ret =  ov5647_s_blue_balance(sd, ctrl->val);
-////        break;
-//
-//    default:
-//
-//        printk(KERN_ERR "ov5647_s_auto_n_preset_white_balance_ctrl default: %x %x\n", ctrl->id, ctrl->val);
-//
-//        dev_info(&client->dev,
-//                 "ov5647_s_auto_n_preset_white_balance_ctrl Control (id:0x%x, val:0x%x) not supported\n",
-//                 ctrl->id, ctrl->val);
-//        return -EINVAL;
-//    }
-//
-//    pm_runtime_put(&client->dev);
-//
-//    return ret;
-//}
-
-
 static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
 {
-    printk(KERN_ERR "ov5647_s_ctrl: %x %x\n", ctrl->id, ctrl->val);
-
     struct ov5647 *sensor = container_of(ctrl->handler,
                                          struct ov5647, ctrls);
     struct v4l2_subdev *sd = &sensor->sd;
@@ -2248,63 +1584,24 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
     switch (ctrl->id)
     {
     case V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
-
         ret = ov5647_s_auto_n_preset_white_balance(sd, ctrl->val);
         break;
-//    case V4L2_WHITE_BALANCE_MANUAL:
-//
-//        printk(KERN_ERR "ov5647_s_ctrl V4L2_WHITE_BALANCE_MANUAL: %x %x\n", ctrl->id, ctrl->val);
-//
-//        ret = ov5647_s_auto_white_balance(sd, ctrl->val);
-//        break;
-//    case V4L2_WHITE_BALANCE_AUTO:
-//
-//        printk(KERN_ERR "ov5647_s_ctrl V4L2_WHITE_BALANCE_AUTO: %x %x\n", ctrl->id, ctrl->val);
-//
-//        ret = ov5647_s_auto_white_balance(sd, ctrl->val);
-//        break;
-//    case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
-//
-//        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_WHITE_BALANCE_TEMPERATURE: %x %x\n", ctrl->id, ctrl->val);
-//
-//        ret = ov5647_s_auto_white_balance_control(sd, ctrl->val);
-//        break;
     case V4L2_CID_AUTO_WHITE_BALANCE:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTO_WHITE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
-
         ret = ov5647_s_auto_white_balance(sd, ctrl->val);
         break;
     case V4L2_CID_AUTOGAIN:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_AUTOGAIN: %x %x\n", ctrl->id, ctrl->val);
-
         ret = ov5647_s_autogain(sd, ctrl->val);
         break;
     case V4L2_CID_EXPOSURE_AUTO:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_EXPOSURE_AUTO: %x %x\n", ctrl->id, ctrl->val);
-
         ret = ov5647_s_exposure_auto(sd, ctrl->val);
         break;
     case V4L2_CID_ANALOGUE_GAIN:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_ANALOGUE_GAIN: %x %x\n", ctrl->id, ctrl->val);
-
         ret =  ov5647_s_analogue_gain(sd, ctrl->val);
         break;
     case V4L2_CID_EXPOSURE:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_EXPOSURE: %x %x\n", ctrl->id, ctrl->val);
-
         ret = ov5647_s_exposure(sd, ctrl->val);
         break;
     case V4L2_CID_VBLANK:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_VBLANK: %x %x\n", ctrl->id, ctrl->val);
-
         ret = ov5647_write16(sd, OV5647_REG_VTS_HI,
                              sensor->mode->format.height + ctrl->val);
         break;
@@ -2312,37 +1609,22 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
 //     Read-only, but we adjust it based on mode.
     case V4L2_CID_PIXEL_RATE:
     case V4L2_CID_HBLANK:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_PIXEL_RATE: %x %x\n", ctrl->id, ctrl->val);
-
         /* Read-only, but we adjust it based on mode. */
         break;
 
     case V4L2_CID_RED_BALANCE:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_RED_BALANCE: %x %x\n", ctrl->id, ctrl->val);
-
         ret =  ov5647_s_red_balance(sd, ctrl->val);
         break;
 
     case V4L2_CID_GAIN:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_GAIN: %x %x\n", ctrl->id, ctrl->val);
-
         ret =  ov5647_s_gain(sd, ctrl->val);
         break;
 
     case V4L2_CID_BLUE_BALANCE:
-
-        printk(KERN_ERR "ov5647_s_ctrl V4L2_CID_BLUE_BALANCE: %x %x\n", ctrl->id, ctrl->val);
-
         ret =  ov5647_s_blue_balance(sd, ctrl->val);
         break;
 
     default:
-
-        printk(KERN_ERR "ov5647_s_ctrl default: %x %x\n", ctrl->id, ctrl->val);
-
         dev_info(&client->dev,
                  "Control (id:0x%x, val:0x%x) not supported\n",
                  ctrl->id, ctrl->val);
@@ -2354,11 +1636,6 @@ static int ov5647_s_ctrl(struct v4l2_ctrl *ctrl)
     return ret;
 }
 
-//static const struct v4l2_ctrl_ops ov5647_auto_n_preset_white_balance_ctrl_ops =
-//{
-//    .s_ctrl = ov5647_s_auto_n_preset_white_balance_ctrl,
-//};
-
 static const struct v4l2_ctrl_ops ov5647_ctrl_ops =
 {
     .s_ctrl = ov5647_s_ctrl,
@@ -2366,30 +1643,21 @@ static const struct v4l2_ctrl_ops ov5647_ctrl_ops =
 
 static int ov5647_init_controls(struct ov5647 *sensor)
 {
-    ////printk(KERN_ERR "ov5647_init_controls: %x %x\n", sensor, 0);
-
     struct i2c_client *client = v4l2_get_subdevdata(&sensor->sd);
     int hblank, exposure_max, exposure_def;
-//	struct ov5647_ctrls *ctrls = &sensor->ctrls;
 
     v4l2_ctrl_handler_init(&sensor->ctrls, 12);
 
     /* White balance */
     sensor->auto_wb = v4l2_ctrl_new_std_menu(&sensor->ctrls,
-                                            &ov5647_ctrl_ops,
-                                            V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
-                                            V4L2_WHITE_BALANCE_AUTO,
-                                            0,
-                                            V4L2_WHITE_BALANCE_AUTO);
-//	ctrls->auto_wb = v4l2_ctrl_new_std_menu(hdl, ops,
-//			V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
-//			9, ~0x15e, V4L2_WHITE_BALANCE_AUTO);
+                      &ov5647_ctrl_ops,
+                      V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
+                      V4L2_WHITE_BALANCE_AUTO,
+                      0,
+                      V4L2_WHITE_BALANCE_AUTO);
 
     v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
                       V4L2_CID_AUTOGAIN, 0, 1, 1, 0);
-
-//    v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
-//                      V4L2_CID_WHITE_BALANCE_TEMPERATURE, 0, 0xff, 1, 0);
 
     v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
                       V4L2_CID_AUTO_WHITE_BALANCE, 0, 1, 1, 0);
@@ -2456,8 +1724,6 @@ handler_free:
 
 static int ov5647_parse_dt(struct ov5647 *sensor, struct device_node *np)
 {
-    ////printk(KERN_ERR "ov5647_parse_dt: %x %x\n", np, 0);
-
     struct v4l2_fwnode_endpoint bus_cfg =
     {
         .bus_type = V4L2_MBUS_CSI2_DPHY,
@@ -2479,14 +1745,11 @@ static int ov5647_parse_dt(struct ov5647 *sensor, struct device_node *np)
 out:
     of_node_put(ep);
 
-    ////printk(KERN_ERR "ov5647_parse_dt sensor->clock_ncont: %x %d\n", ep, sensor->clock_ncont);
     return ret;
 }
 
 static int ov5647_probe(struct i2c_client *client)
 {
-    ////printk(KERN_ERR "ov5647_probe: %x %x\n", client, 0);
-
     struct device_node *np = client->dev.of_node;
     struct device *dev = &client->dev;
     struct ov5647 *sensor;
@@ -2515,17 +1778,12 @@ static int ov5647_probe(struct i2c_client *client)
         return PTR_ERR(sensor->xclk);
     }
 
-    ////printk(KERN_ERR "ov5647_probe sensor->xclk: %x %d\n", client, sensor->xclk);
-
     xclk_freq = clk_get_rate(sensor->xclk);
     if (xclk_freq != 25000000)
     {
         dev_err(dev, "Unsupported clock frequency: %u\n", xclk_freq);
         return -EINVAL;
     }
-
-    ////printk(KERN_ERR "ov5647_probe xclk_freq: %x %d\n", client, xclk_freq);
-
 
     /* Request the power down GPIO asserted. */
     sensor->pwdn = devm_gpiod_get_optional(dev, "pwdn", GPIOD_OUT_HIGH);
@@ -2534,9 +1792,6 @@ static int ov5647_probe(struct i2c_client *client)
         dev_err(dev, "Failed to get 'pwdn' gpio\n");
         return -EINVAL;
     }
-
-    ////printk(KERN_ERR "ov5647_probe sensor->pwdn: %x %d\n", client, sensor->pwdn);
-
 
     mutex_init(&sensor->lock);
 
@@ -2575,7 +1830,6 @@ static int ov5647_probe(struct i2c_client *client)
     pm_runtime_idle(dev);
 
     dev_dbg(dev, "OmniVision OV5647 camera driver probed\n");
-    ////printk(KERN_ERR "ov5647_probe ok: %x %d\n", client, ret);
 
     return 0;
 
@@ -2592,10 +1846,7 @@ mutex_destroy:
 }
 
 static void ov5647_remove(struct i2c_client *client)
-//static int ov5647_remove(struct i2c_client *client)
 {
-    ////printk(KERN_ERR "ov5647_remove: %x %x\n", client, 0);
-
     struct v4l2_subdev *sd = i2c_get_clientdata(client);
     struct ov5647 *sensor = to_sensor(sd);
 
@@ -2607,7 +1858,6 @@ static void ov5647_remove(struct i2c_client *client)
     mutex_destroy(&sensor->lock);
 
     return;
-//    return 0;
 }
 
 static const struct dev_pm_ops ov5647_pm_ops =
