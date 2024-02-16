@@ -897,7 +897,6 @@ static int ov5647_read(struct v4l2_subdev *sd, u16 reg, u8 *val)
         return ret;
     }
 
-    ////printk(KERN_ERR "ov5647_read: %x %x\n", reg, *val);
     return 0;
 }
 
