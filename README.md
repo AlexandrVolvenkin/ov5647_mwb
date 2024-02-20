@@ -26,4 +26,5 @@ v4l2-ctl -d /dev/v4l-subdev3 --set-ctrl white_balance_auto_preset=1
 media-ctl  -p
 
 Проверял работу в Linux mainline 6.3.2
+https://www.youtube.com/watch?v=T38xukf8jJU
  
